@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MAC.BID True Price Options</title>
+  <style>
+    body {
+      color: #24122f;
+      font-family: Arial, sans-serif;
+      margin: 32px auto;
+      max-width: 620px;
+      padding: 0 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin: 0 0 8px;
+    }
+
+    p {
+      color: #5d5268;
+      line-height: 1.5;
+      margin: 0 0 18px;
+    }
+
+    label {
+      display: grid;
+      font-weight: 700;
+      gap: 6px;
+      margin: 14px 0;
+    }
+
+    input {
+      border: 1px solid #d7c9e7;
+      border-radius: 8px;
+      font-size: 15px;
+      padding: 9px 10px;
+    }
+
+    input[type="checkbox"] {
+      justify-self: start;
+      width: auto;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 800;
+      padding: 10px 14px;
+    }
+
+    .primary {
+      background: #24122f;
+      color: white;
+    }
+
+    .secondary {
+      background: #eee8f5;
+      color: #24122f;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    #status {
+      color: #5d5268;
+      margin-top: 12px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MAC.BID True Price Options</h1>
+  <p>Adjust the defaults used by the estimate panel. Tax and totals are still estimates.</p>
+
+  <label>
+    Buyer's premium percent
+    <input id="premiumRate" type="number" min="0" step="0.1">
+  </label>
+
+  <label>
+    Lot fee
+    <input id="lotFee" type="number" min="0" step="0.01">
+  </label>
+
+  <label>
+    Enable buyer's assurance by default
+    <input id="assuranceEnabled" type="checkbox">
+  </label>
+
+  <label>
+    Buyer's assurance amount
+    <input id="assuranceFee" type="number" min="0" step="0.01">
+  </label>
+
+  <label>
+    Use custom tax by default
+    <input id="customTaxEnabled" type="checkbox">
+  </label>
+
+  <label>
+    Custom tax percent
+    <input id="customTaxRate" type="number" min="0" step="0.01">
+  </label>
+
+  <div class="row">
+    <button class="primary" id="save" type="button">Save</button>
+    <button class="secondary" id="reset" type="button">Reset defaults</button>
+  </div>
+  <div id="status" role="status"></div>
+
+  <script src="shared/fees.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

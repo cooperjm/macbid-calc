@@ -49,3 +49,25 @@ The app calls mac.bid's public search API directly from your browser. If mac.bid
 - Search loads the **current** bid — adjust it to what you actually plan to bid.
 - Your tax state, assurance setting, and budget are remembered in your browser (localStorage).
 - Fee structure per [mac.bid's terms of use](https://www.mac.bid/terms-of-use). If their fees change, update `LOT` and `PREM` at the top of the script in `index.html`.
+
+## Chrome extension development
+
+This repo also contains an unpacked Chrome extension in `extension/`.
+
+1. Open Chrome and go to `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked**.
+4. Select the `extension/` folder.
+5. Visit a MAC.BID item page and confirm the estimated total panel appears.
+
+Run focused shared-logic tests with `npm test`.
+
+### Extension manual verification checklist
+
+- The unpacked extension loads without manifest errors.
+- An item page shows an estimated total panel.
+- The total matches: `(bid + bid * 0.15 + 3 + assurance) * (1 + taxRate)`.
+- Updating the budget field updates the max safe bid.
+- Changing extension options updates the item page after refresh or storage change.
+- Editing the current bid text in DevTools updates the panel within about 150ms.
+- Listing/search pages show compact `Est. $...` badges when bid text is visible.

@@ -1,0 +1,84 @@
+#macbid-true-price-root {
+  color: #24122f;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  margin: 12px 0;
+  position: relative;
+  z-index: 2147483647;
+}
+
+.macbid-tp-panel {
+  background: #fff;
+  border: 1px solid rgba(36, 18, 47, 0.14);
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(36, 18, 47, 0.12);
+  color: #24122f;
+  max-width: 360px;
+  padding: 12px;
+}
+
+.macbid-tp-kicker {
+  color: #6f3b8f;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.macbid-tp-total {
+  color: #24122f;
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.macbid-tp-note {
+  color: #6b5a73;
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.macbid-tp-row {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.macbid-tp-breakdown {
+  border-top: 1px solid rgba(36, 18, 47, 0.12);
+  margin-top: 10px;
+  padding-top: 8px;
+}
+
+.macbid-tp-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.macbid-tp-warning {
+  background: #fff7e8;
+  border: 1px solid #f1c36d;
+  border-radius: 10px;
+  color: #6f3b00;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 8px 10px;
+}
+
+.macbid-tp-badge {
+  background: #24122f;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 8px;
+}
