@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2b1e3e">
+<meta name="description" content="See exactly what you'll pay before you bid on MAC.BID — buyer's premium, lot fee, and sales tax calculated instantly, with live lot search.">
+<title>MAC.BID Fee Calculator</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    color-scheme:dark;
+    /* Midnight Galaxy */
+    --bg0:#120b1f;
+    --bg1:#1a1230;
+    --deep:#2b1e3e;
+    --cosmic:#4a4e8f;
+    --cosmic-bright:#6e74c9;
+    --lavender:#a490c2;
+    --silver:#e6e6fa;
+    --text:#efeaf7;
+    --text2:#b3a8c9;
+    --text3:#7d7295;
+    --glass:rgba(230,230,250,.045);
+    --glass2:rgba(230,230,250,.08);
+    --border:rgba(164,144,194,.22);
+    --border-bright:rgba(164,144,194,.45);
+    --green:#7be0a8;
+    --green-deep:rgba(123,224,168,.12);
+    --warn:#e8c468;
+    --danger:#f0879c;
+    --gold:#f3cf6d;
+    --radius:16px;
+    --radius-sm:10px;
+    --font-head:'Space Grotesk',sans-serif;
+    --font-body:'Inter',sans-serif;
+  }
+
+  html{scroll-behavior:smooth}
+
+  body{
+    font-family:var(--font-body);
+    background:var(--bg0);
+    color:var(--text);
+    min-height:100vh;
+    font-size:15px;
+    line-height:1.55;
+    padding:0 1rem 3rem;
+    background-image:
+      radial-gradient(1100px 500px at 80% -10%, rgba(74,78,143,.35), transparent 60%),
+      radial-gradient(900px 500px at -10% 20%, rgba(43,30,62,.9), transparent 60%),
+      radial-gradient(700px 400px at 50% 110%, rgba(110,116,201,.18), transparent 60%);
+    background-attachment:fixed;
+  }
+
+  /* starfield */
+  .stars{
+    position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 22%, rgba(230,230,250,.7), transparent),
+      radial-gradient(1px 1px at 28% 64%, rgba(230,230,250,.4), transparent),
+      radial-gradient(1.5px 1.5px at 41% 12%, rgba(164,144,194,.6), transparent),
+      radial-gradient(1px 1px at 57% 48%, rgba(230,230,250,.35), transparent),
+      radial-gradient(2px 2px at 68% 80%, rgba(164,144,194,.45), transparent),
+      radial-gradient(1px 1px at 76% 28%, rgba(230,230,250,.5), transparent),
+      radial-gradient(1.5px 1.5px at 88% 60%, rgba(230,230,250,.4), transparent),
+      radial-gradient(1px 1px at 94% 8%, rgba(164,144,194,.55), transparent),
+      radial-gradient(1px 1px at 8% 86%, rgba(230,230,250,.4), transparent),
+      radial-gradient(1.5px 1.5px at 33% 92%, rgba(164,144,194,.4), transparent);
+  }
+
+  .container{max-width:920px;margin:0 auto;position:relative;z-index:1;}
+
+  /* ---------- header ---------- */
+  .header{
+    display:flex;align-items:center;gap:14px;
+    padding:2.2rem 0 1.8rem;
+  }
+  .logo{
+    width:46px;height:46px;border-radius:13px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--cosmic) 0%,var(--deep) 100%);
+    border:1px solid var(--border-bright);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 24px rgba(110,116,201,.45);
+  }
+  .logo svg{width:24px;height:24px;fill:var(--silver);}
+  .header h1{
+    font-family:var(--font-head);
+    font-size:clamp(20px,4vw,26px);
+    font-weight:700;letter-spacing:-.02em;line-height:1.15;
+    background:linear-gradient(92deg,var(--silver) 20%,var(--lavender) 60%,var(--cosmic-bright) 100%);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent;
+  }
+  .header p{font-size:13.5px;color:var(--text2);margin-top:2px;}
+
+  /* ---------- cards ---------- */
+  .card{
+    background:var(--glass);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:1.4rem;
+    margin-bottom:1.1rem;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    transition:border-color .25s;
+  }
+  .card:hover{border-color:var(--border-bright);}
+
+  .card-label{
+    font-family:var(--font-head);
+    font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--lavender);margin-bottom:1rem;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
+  .card-label .cl-action{
+    font-size:11px;letter-spacing:.02em;text-transform:none;
+    color:var(--lavender);cursor:pointer;background:none;border:1px solid var(--border);
+    border-radius:14px;padding:2px 11px;font-family:var(--font-body);font-weight:500;
+    transition:border-color .15s,color .15s;flex-shrink:0;
+  }
+  .card-label .cl-action:hover{border-color:var(--border-bright);color:var(--silver);}
+  .card-label .cl-action:disabled{opacity:.5;cursor:default;}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;align-items:start;}
+  @media(max-width:719px){.grid{grid-template-columns:1fr;}}
+  .grid .card{margin-bottom:0;}
+  .col{display:flex;flex-direction:column;gap:1.1rem;}
+
+  /* ---------- inputs ---------- */
+  .field{margin-bottom:1rem;}
+  .field:last-child{margin-bottom:0;}
+  .field label{display:block;font-size:13px;color:var(--text2);margin-bottom:6px;font-weight:500;}
+
+  .input-wrap{position:relative;}
+  .input-wrap .pre,.input-wrap .suf{
+    position:absolute;top:50%;transform:translateY(-50%);
+    font-size:14px;color:var(--text3);pointer-events:none;
+  }
+  .input-wrap .pre{left:13px;}
+  .input-wrap .suf{right:13px;}
+
+  input[type=number],input[type=text],select{
+    width:100%;height:44px;
+    background:var(--glass2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    color:var(--text);
+    font-size:15px;font-family:var(--font-body);
+    outline:none;padding:0 13px;
+    transition:border-color .15s, box-shadow .15s;
+    -webkit-appearance:none;appearance:none;
+  }
+  input[type=number].has-pre{padding-left:27px;}
+  input[type=number].has-suf{padding-right:30px;}
+  input::placeholder{color:var(--text3);}
+
+  select{
+    padding-right:34px;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a490c2' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;
+  }
+  select option{background:var(--bg1);color:var(--text);}
+
+  input:focus,select:focus{
+    border-color:var(--cosmic-bright);
+    box-shadow:0 0 0 3px rgba(110,116,201,.22), 0 0 18px rgba(110,116,201,.18);
+  }
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+
+  /* ---------- search ---------- */
+  .search-row{display:flex;gap:10px;}
+  .search-row input{flex:1;}
+  .btn{
+    height:44px;padding:0 20px;border:none;border-radius:var(--radius-sm);
+    background:linear-gradient(135deg,var(--cosmic-bright),var(--cosmic));
+    color:var(--silver);font-size:14px;font-weight:600;font-family:var(--font-head);
+    letter-spacing:.02em;cursor:pointer;flex-shrink:0;
+    box-shadow:0 4px 18px rgba(110,116,201,.35);
+    transition:transform .15s, box-shadow .15s, opacity .15s;
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(110,116,201,.5);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{opacity:.55;cursor:default;transform:none;}
+
+  .filter-row{display:flex;align-items:center;gap:10px;margin-top:.8rem;}
+  .filter-row .fl-label{font-size:13px;color:var(--text2);font-weight:500;flex-shrink:0;}
+  .filter-row select{flex:1;height:38px;font-size:14px;}
+
+  .search-status{font-size:13px;color:var(--text2);margin-top:.7rem;}
+  .search-status.err{color:var(--danger);}
+  .search-status .spinner, .watch-status .spinner{
+    display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px;
+    border:2px solid var(--border-bright);border-top-color:var(--lavender);
+    border-radius:50%;animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .results{margin-top:.7rem;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;display:none;}
+  .results.open{display:block;animation:fadeUp .25s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .result-row{
+    padding:.65rem .8rem;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .12s;
+    display:flex;align-items:center;gap:11px;
+  }
+  .result-row:last-child{border-bottom:none;}
+  .result-row:hover{background:var(--glass2);}
+  .rr-thumb{
+    width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;
+    background:var(--glass2);border:1px solid var(--border);
+  }
+  .rr-body{flex:1;min-width:0;}
+  .rr-name{font-size:13.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .rr-meta{font-size:12px;color:var(--text2);margin-top:2px;display:flex;flex-wrap:wrap;gap:2px 12px;}
+  .rr-meta b{color:var(--silver);font-weight:600;}
+  .rr-meta .rr-bid{color:var(--green);font-weight:600;}
+
+  .star-btn{
+    width:34px;height:34px;flex-shrink:0;border:none;background:none;cursor:pointer;
+    font-size:19px;line-height:1;color:var(--text3);border-radius:8px;
+    transition:color .15s, transform .15s, text-shadow .15s;
+  }
+  .star-btn:hover{color:var(--gold);transform:scale(1.15);}
+  .star-btn.on{color:var(--gold);text-shadow:0 0 12px rgba(243,207,109,.6);}
+
+  .selected-item{
+    margin-top:.7rem;position:relative;display:none;
+    background:linear-gradient(135deg,rgba(110,116,201,.14),rgba(43,30,62,.4));
+    border:1px solid var(--border-bright);
+    border-radius:var(--radius-sm);
+    padding:.8rem 1rem;
+  }
+  .selected-item.open{display:flex;gap:12px;align-items:flex-start;animation:fadeUp .25s ease;}
+  .si-thumb{
+    width:64px;height:64px;border-radius:9px;object-fit:cover;flex-shrink:0;
+    background:var(--glass2);border:1px solid var(--border);
+  }
+  .si-body{flex:1;min-width:0;}
+  .si-name{font-size:14px;font-weight:600;color:var(--silver);padding-right:74px;font-family:var(--font-head);}
+  .si-meta{font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.7;}
+  .si-meta b{color:var(--text);font-weight:600;}
+  .si-actions{position:absolute;top:6px;right:6px;display:flex;gap:2px;}
+  .si-actions button{
+    width:28px;height:28px;border:none;background:none;cursor:pointer;
+    color:var(--text3);font-size:15px;line-height:1;border-radius:7px;
+    transition:color .15s;
+  }
+  .si-actions button:hover{color:var(--silver);}
+  .si-actions .star-btn{width:28px;height:28px;font-size:16px;}
+
+  /* ---------- watching ---------- */
+  #watchCard{display:none;}
+  #watchCard.open{display:block;}
+  .fav-row{
+    padding:.65rem .2rem;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .12s;
+    display:flex;align-items:center;gap:11px;border-radius:8px;
+  }
+  .fav-row:last-child{border-bottom:none;}
+  .fav-row:hover{background:var(--glass2);}
+  .watch-status{font-size:12.5px;color:var(--text2);margin-top:.5rem;}
+  .watch-status.err{color:var(--danger);}
+  .fav-closes{color:var(--warn);font-weight:600;}
+
+  /* ---------- toggle ---------- */
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .toggle-info .t-label{font-size:14px;font-weight:600;color:var(--text);}
+  .toggle-info .t-sub{font-size:12px;color:var(--text2);margin-top:1px;}
+  .toggle{position:relative;width:46px;height:26px;flex-shrink:0;}
+  .toggle input{opacity:0;width:0;height:0;position:absolute;}
+  .t-slider{
+    position:absolute;inset:0;background:var(--glass2);
+    border:1px solid var(--border);border-radius:26px;cursor:pointer;transition:background .2s,border-color .2s;
+  }
+  .t-slider:before{
+    content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;
+    background:var(--lavender);border-radius:50%;transition:transform .2s,background .2s;
+  }
+  .toggle input:checked + .t-slider{background:var(--cosmic);border-color:var(--cosmic-bright);}
+  .toggle input:checked + .t-slider:before{transform:translateX(20px);background:var(--silver);}
+
+  .assurance-fields{
+    background:rgba(110,116,201,.1);border:1px solid var(--border);
+    border-radius:var(--radius-sm);padding:.8rem 1rem;margin-top:.9rem;display:none;
+  }
+  .assurance-fields.open{display:block;animation:fadeUp .2s ease;}
+  .assurance-note{font-size:12px;color:var(--lavender);margin-bottom:.7rem;line-height:1.5;}
+
+  .badge{
+    display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:5px;
+    font-weight:600;text-transform:uppercase;letter-spacing:.07em;
+    vertical-align:middle;margin-left:6px;
+    background:rgba(232,196,104,.14);color:var(--warn);border:1px solid rgba(232,196,104,.3);
+  }
+
+  /* ---------- breakdown ---------- */
+  .breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;}
+  .breakdown-row .br-label{color:var(--text2);}
+  .breakdown-row .br-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+
+  .divider{border:none;border-top:1px solid var(--border);margin:.8rem 0;}
+
+  .total-row{padding:8px 0 0;display:flex;justify-content:space-between;align-items:baseline;}
+  .total-row .br-label{font-family:var(--font-head);font-size:15px;font-weight:600;color:var(--silver);}
+  .total-row .br-val{
+    font-family:var(--font-head);font-size:34px;font-weight:700;letter-spacing:-.03em;
+    font-variant-numeric:tabular-nums;
+    background:linear-gradient(92deg,var(--silver),var(--lavender));
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;color:transparent;
+    text-shadow:0 0 32px rgba(164,144,194,.35);
+  }
+
+  .meta-row{display:flex;gap:10px;margin-top:.7rem;flex-wrap:wrap;}
+  .meta-pill{
+    font-size:12px;padding:4px 12px;border-radius:20px;
+    background:var(--glass2);color:var(--text2);
+    border:1px solid var(--border);font-variant-numeric:tabular-nums;
+  }
+  .meta-pill span{color:var(--text);font-weight:600;}
+  .meta-pill.good{background:var(--green-deep);color:var(--green);border-color:rgba(123,224,168,.35);}
+  .meta-pill.good span{color:var(--green);}
+
+  /* ---------- reverse ---------- */
+  .rc-header{display:flex;align-items:center;gap:10px;margin-bottom:1rem;}
+  .rc-icon{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;
+    background:var(--green-deep);border:1px solid rgba(123,224,168,.3);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .rc-icon svg{width:14px;height:14px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  .rc-header h2{font-family:var(--font-head);font-size:14px;font-weight:600;color:var(--text);}
+  .rc-header p{font-size:12px;color:var(--text2);}
+
+  .reverse-row{display:flex;align-items:center;gap:12px;}
+  .budget-wrap{flex:1;max-width:150px;}
+  .budget-wrap .bw-label{font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:500;}
+  .arrow-icon{color:var(--lavender);font-size:18px;}
+  .max-bid-display{
+    flex:1;border-radius:var(--radius-sm);padding:8px 14px;
+    background:var(--green-deep);border:1px solid rgba(123,224,168,.3);
+  }
+  .mbd-label{font-size:11px;color:var(--text2);margin-bottom:1px;}
+  .mbd-val{
+    font-family:var(--font-head);font-size:21px;font-weight:700;color:var(--green);
+    letter-spacing:-.02em;font-variant-numeric:tabular-nums;
+  }
+
+  .footer-note{
+    font-size:12px;color:var(--text3);text-align:center;
+    padding-top:1.4rem;line-height:1.8;
+  }
+  .footer-note a{color:var(--lavender);text-decoration:none;}
+  .footer-note a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 20 20"><path d="M10 2L3 7v11h14V7L10 2z"/><rect x="7" y="12" width="6" height="6" fill="rgba(230,230,250,.4)"/></svg>
+    </div>
+    <div>
+      <h1>MAC.BID Fee Calculator</h1>
+      <p>See exactly what you'll pay before you bid</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Find your item · live from mac.bid</div>
+    <div class="search-row">
+      <input type="text" id="q" placeholder='Search lots, e.g. "dyson vacuum"' />
+      <button class="btn" id="searchBtn">Search</button>
+    </div>
+    <div class="filter-row">
+      <span class="fl-label">My location:</span>
+      <select id="locSelect"></select>
+    </div>
+    <div class="search-status" id="searchStatus"></div>
+    <div class="results" id="results"></div>
+    <div class="selected-item" id="selectedItem">
+      <img class="si-thumb" id="siThumb" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <div class="si-body">
+        <div class="si-name" id="siName"></div>
+        <div class="si-meta" id="siMeta"></div>
+      </div>
+      <div class="si-actions">
+        <button class="star-btn" id="siStar" title="Watch this item">☆</button>
+        <button id="siRefresh" title="Refresh current bid">↻</button>
+        <button id="siClear" title="Clear">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="watchCard">
+    <div class="card-label">Watching
+      <button class="cl-action" id="refreshAllBtn">↻ Refresh bids</button>
+    </div>
+    <div id="favList"></div>
+    <div class="watch-status" id="watchStatus"></div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+
+      <div class="card">
+        <div class="card-label">Your bid</div>
+
+        <div class="field">
+          <label for="bid">Winning bid amount</label>
+          <div class="input-wrap">
+            <span class="pre">$</span>
+            <input type="number" id="bid" class="has-pre" min="0" step="1" value="50" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="taxSelect">State / sales tax</label>
+          <select id="taxSelect">
+            <option value="0">No sales tax (0%)</option>
+            <option value="0.04">Alabama — 4%</option>
+            <option value="0">Alaska — 0%</option>
+            <option value="0.056">Arizona — 5.6%</option>
+            <option value="0.065">Arkansas — 6.5%</option>
+            <option value="0.0725">California — 7.25%</option>
+            <option value="0.029">Colorado — 2.9%</option>
+            <option value="0.0635">Connecticut — 6.35%</option>
+            <option value="0">Delaware — 0%</option>
+            <option value="0.06">Florida — 6%</option>
+            <option value="0.04">Georgia — 4%</option>
+            <option value="0.04">Hawaii — 4%</option>
+            <option value="0.06">Idaho — 6%</option>
+            <option value="0.0625">Illinois — 6.25%</option>
+            <option value="0.07">Indiana — 7%</option>
+            <option value="0.06">Iowa — 6%</option>
+            <option value="0.065">Kansas — 6.5%</option>
+            <option value="0.06">Kentucky — 6%</option>
+            <option value="0.0445">Louisiana — 4.45%</option>
+            <option value="0.055">Maine — 5.5%</option>
+            <option value="0.06">Maryland — 6%</option>
+            <option value="0.0625">Massachusetts — 6.25%</option>
+            <option value="0.06">Michigan — 6%</option>
+            <option value="0.0688">Minnesota — 6.875%</option>
+            <option value="0.07">Mississippi — 7%</option>
+            <option value="0.04225">Missouri — 4.225%</option>
+            <option value="0">Montana — 0%</option>
+            <option value="0.055">Nebraska — 5.5%</option>
+            <option value="0.0685">Nevada — 6.85%</option>
+            <option value="0">New Hampshire — 0%</option>
+            <option value="0.06625">New Jersey — 6.625%</option>
+            <option value="0.05125">New Mexico — 5.125%</option>
+            <option value="0.04">New York — 4%</option>
+            <option value="0.0475">North Carolina — 4.75%</option>
+            <option value="0.05">North Dakota — 5%</option>
+            <option value="0.0575">Ohio — 5.75%</option>
+            <option value="0.045">Oklahoma — 4.5%</option>
+            <option value="0">Oregon — 0%</option>
+            <option value="0.06">Pennsylvania — 6%</option>
+            <option value="0.07">Rhode Island — 7%</option>
+            <option value="0.06" selected>South Carolina — 6%</option>
+            <option value="0.045">South Dakota — 4.5%</option>
+            <option value="0.07">Tennessee — 7%</option>
+            <option value="0.0625">Texas — 6.25%</option>
+            <option value="0.0485">Utah — 4.85%</option>
+            <option value="0.06">Vermont — 6%</option>
+            <option value="0.053">Virginia — 5.3%</option>
+            <option value="0.065">Washington — 6.5%</option>
+            <option value="0.06">West Virginia — 6%</option>
+            <option value="0.05">Wisconsin — 5%</option>
+            <option value="0.04">Wyoming — 4%</option>
+            <option value="custom">Custom rate…</option>
+          </select>
+        </div>
+
+        <div class="field" id="customTaxField" style="display:none">
+          <label for="customTax">Custom tax rate</label>
+          <div class="input-wrap">
+            <input type="number" id="customTax" class="has-suf" min="0" max="25" step="0.1" value="6" />
+            <span class="suf">%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Optional add-ons</div>
+
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="t-label">Buyer's Assurance <span class="badge">optional</span></div>
+            <div class="t-sub">7-day return window — fee is fixed when you bid</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="assurance">
+            <span class="t-slider"></span>
+          </label>
+        </div>
+
+        <div class="assurance-fields" id="assuranceFields">
+          <div class="assurance-note">Enter the assurance fee shown on the listing — it's set by item value and won't change as your bid goes up (commonly $7–$14).</div>
+          <div class="field" style="margin-bottom:0">
+            <label for="assuranceFee">Assurance fee</label>
+            <div class="input-wrap">
+              <span class="pre">$</span>
+              <input type="number" id="assuranceFee" class="has-pre" min="0" step="1" value="7" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="col">
+
+      <div class="card">
+        <div class="card-label">Cost breakdown</div>
+
+        <div class="breakdown-row">
+          <span class="br-label">Winning bid</span>
+          <span class="br-val" id="r-bid">$50.00</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="br-label">Buyer's premium (15%)</span>
+          <span class="br-val" id="r-premium">$7.50</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="br-label">Lot fee</span>
+          <span class="br-val" id="r-lot">$3.00</span>
+        </div>
+        <div class="breakdown-row" id="r-ass-row" style="display:none">
+          <span class="br-label">Buyer's Assurance</span>
+          <span class="br-val" id="r-ass">$7.00</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="br-label">Sales tax (<span id="r-taxrate">6%</span>)</span>
+          <span class="br-val" id="r-tax">$3.63</span>
+        </div>
+
+        <hr class="divider">
+
+        <div class="total-row">
+          <span class="br-label">Total you pay</span>
+          <span class="br-val" id="r-total">$64.13</span>
+        </div>
+
+        <div class="meta-row">
+          <div class="meta-pill">Fees above bid: <span id="r-overhead">$14.13</span></div>
+          <div class="meta-pill">Markup: <span id="r-markup">28.3%</span></div>
+          <div class="meta-pill good" id="r-retail-pill" style="display:none">vs retail: <span id="r-retail">—</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="rc-header">
+          <div class="rc-icon">
+            <svg viewBox="0 0 16 16"><path d="M2 8h12M8 2l6 6-6 6"/></svg>
+          </div>
+          <div>
+            <h2>Reverse calculator</h2>
+            <p>The most you should bid to stay under budget</p>
+          </div>
+        </div>
+
+        <div class="reverse-row">
+          <div class="budget-wrap">
+            <div class="bw-label">My budget</div>
+            <div class="input-wrap">
+              <span class="pre">$</span>
+              <input type="number" id="budget" class="has-pre" min="0" step="1" value="75" />
+            </div>
+          </div>
+          <div class="arrow-icon">→</div>
+          <div class="max-bid-display">
+            <div class="mbd-label">Max safe bid</div>
+            <div class="mbd-val" id="r-maxbid">$58.92</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer-note">
+    Fees per <a href="https://www.mac.bid/terms-of-use" target="_blank" rel="noopener">mac.bid terms</a>: 15% buyer's premium · $3 lot fee · sales tax on full subtotal<br>
+    Search uses mac.bid's public search API · tax uses the state base rate — local rates at your pickup warehouse may be higher<br>
+    Not affiliated with MAC.BID
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+const LOT = 3;
+const PREM = 0.15;
+
+/* If mac.bid's API blocks cross-origin requests, deploy the Cloudflare Worker
+   in worker.js (see README) and put its URL here, e.g.
+   const API_BASE = 'https://macbid-proxy.yourname.workers.dev/search'; */
+const API_BASE = 'https://api.macdiscount.com/search';
+
+const STATE_NAMES = {AL:'Alabama',AK:'Alaska',AZ:'Arizona',AR:'Arkansas',CA:'California',CO:'Colorado',CT:'Connecticut',DE:'Delaware',FL:'Florida',GA:'Georgia',HI:'Hawaii',ID:'Idaho',IL:'Illinois',IN:'Indiana',IA:'Iowa',KS:'Kansas',KY:'Kentucky',LA:'Louisiana',ME:'Maine',MD:'Maryland',MA:'Massachusetts',MI:'Michigan',MN:'Minnesota',MS:'Mississippi',MO:'Missouri',MT:'Montana',NE:'Nebraska',NV:'Nevada',NH:'New Hampshire',NJ:'New Jersey',NM:'New Mexico',NY:'New York',NC:'North Carolina',ND:'North Dakota',OH:'Ohio',OK:'Oklahoma',OR:'Oregon',PA:'Pennsylvania',RI:'Rhode Island',SC:'South Carolina',SD:'South Dakota',TN:'Tennessee',TX:'Texas',UT:'Utah',VT:'Vermont',VA:'Virginia',WA:'Washington',WV:'West Virginia',WI:'Wisconsin',WY:'Wyoming'};
+
+/* Seed list of known warehouses — the app learns new ones from search results. */
+const LOC_SEED = ['Akron','Anderson','Beaver Falls','Boardman','Bridgeport','Butler','Canton','El Paso','Gastonia','Greenville','Monroeville','Pittsburgh Mills','Robinson','Rock Hill','Spartanburg','Uniontown','Warren','Washington'];
+
+let selectedLot = null;
+let lastHits = [];
+let knownLocs = LOC_SEED.slice();
+let stars = [];
+
+function $(id){ return document.getElementById(id); }
+function fmt(n){ return '$' + n.toFixed(2); }
+function esc(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+function timeLeft(utcSeconds){
+  if(!utcSeconds) return '';
+  const s = utcSeconds - Date.now() / 1000;
+  if(s <= 0) return 'closed';
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+  if(d > 0) return d + 'd ' + h + 'h';
+  if(h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+
+function lotClosed(l){
+  if(l.expected_closing_utc) return l.expected_closing_utc < Date.now() / 1000;
+  if(l.expected_close_date) return new Date(l.expected_close_date + 'T23:59:59') < new Date();
+  return false;
+}
+
+/* keep only what we need in localStorage */
+function trimLot(h){
+  return {
+    lot_id: h.lot_id, product_name: h.product_name, auction_title: h.auction_title,
+    current_bid: h.current_bid, retail_price: h.retail_price, condition: h.condition,
+    auction_location: h.auction_location, us_state: h.us_state,
+    expected_close_date: h.expected_close_date, expected_closing_utc: h.expected_closing_utc,
+    image_url: h.image_url, instant_win_price: h.instant_win_price, total_bids: h.total_bids
+  };
+}
+
+/* ---------- persistence ---------- */
+const STORE_KEY = 'macbid-calc-v1';
+
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      taxIndex: $('taxSelect').selectedIndex,
+      customTax: $('customTax').value,
+      assurance: $('assurance').checked,
+      assuranceFee: $('assuranceFee').value,
+      budget: $('budget').value,
+      loc: $('locSelect').value,
+      knownLocs: knownLocs,
+      stars: stars
+    }));
+  }catch(e){}
+}
+
+function restoreState(){
+  let s = null;
+  try{ s = JSON.parse(localStorage.getItem(STORE_KEY)); }catch(e){}
+  if(s){
+    if(Array.isArray(s.knownLocs) && s.knownLocs.length) knownLocs = s.knownLocs;
+    if(Array.isArray(s.stars)) stars = s.stars.filter(x => x && x.lot_id && !lotClosed(x));
+  }
+  renderLocOptions(s && s.loc ? s.loc : '');
+  if(!s) return;
+  if(Number.isInteger(s.taxIndex) && s.taxIndex >= 0 && s.taxIndex < $('taxSelect').options.length){
+    $('taxSelect').selectedIndex = s.taxIndex;
+  }
+  if(s.customTax != null) $('customTax').value = s.customTax;
+  $('customTaxField').style.display = $('taxSelect').value === 'custom' ? 'block' : 'none';
+  if(s.assurance){
+    $('assurance').checked = true;
+    $('assuranceFields').classList.add('open');
+  }
+  if(s.assuranceFee != null) $('assuranceFee').value = s.assuranceFee;
+  if(s.budget != null) $('budget').value = s.budget;
+}
+
+/* ---------- math ---------- */
+function taxRate(){
+  const v = $('taxSelect').value;
+  if(v === 'custom') return (parseFloat($('customTax').value) || 0) / 100;
+  return parseFloat(v) || 0;
+}
+
+function assuranceFee(){
+  if(!$('assurance').checked) return 0;
+  return parseFloat($('assuranceFee').value) || 0;
+}
+
+function calcFromBid(bid){
+  const tax = taxRate();
+  const ass = assuranceFee();
+  const premium = bid * PREM;
+  const subtotal = bid + premium + LOT + ass;
+  const taxAmt = subtotal * tax;
+  const total = subtotal + taxAmt;
+  return { bid, premium, ass, taxAmt, tax, total };
+}
+
+function maxBidFromBudget(budget){
+  const tax = taxRate();
+  const ass = assuranceFee();
+  const numerator = budget - LOT - ass - (LOT + ass) * tax;
+  const denominator = (1 + PREM) * (1 + tax);
+  return Math.max(0, numerator / denominator);
+}
+
+function update(){
+  const bid = parseFloat($('bid').value) || 0;
+  const r = calcFromBid(bid);
+
+  $('r-bid').textContent = fmt(r.bid);
+  $('r-premium').textContent = fmt(r.premium);
+  $('r-lot').textContent = fmt(LOT);
+  $('r-tax').textContent = fmt(r.taxAmt);
+  $('r-taxrate').textContent = (r.tax * 100).toFixed(r.tax * 100 % 1 === 0 ? 0 : 2) + '%';
+  $('r-total').textContent = fmt(r.total);
+
+  const overhead = r.total - r.bid;
+  const markup = r.bid > 0 ? (overhead / r.bid * 100).toFixed(1) + '%' : '—';
+  $('r-overhead').textContent = fmt(overhead);
+  $('r-markup').textContent = markup;
+
+  const assRow = $('r-ass-row');
+  if(r.ass > 0){
+    assRow.style.display = 'flex';
+    $('r-ass').textContent = fmt(r.ass);
+  } else {
+    assRow.style.display = 'none';
+  }
+
+  const pill = $('r-retail-pill');
+  if(selectedLot && selectedLot.retail_price > 0){
+    const pct = (r.total / selectedLot.retail_price * 100).toFixed(0);
+    $('r-retail').textContent = pct + '% of ' + fmt(Number(selectedLot.retail_price));
+    pill.style.display = 'inline-block';
+  } else {
+    pill.style.display = 'none';
+  }
+
+  const budget = parseFloat($('budget').value) || 0;
+  $('r-maxbid').textContent = fmt(maxBidFromBudget(budget));
+
+  saveState();
+}
+
+/* ---------- locations ---------- */
+function renderLocOptions(selected){
+  const sel = $('locSelect');
+  const current = selected != null ? selected : sel.value;
+  sel.innerHTML = '';
+  const all = document.createElement('option');
+  all.value = '';
+  all.textContent = 'All locations';
+  sel.appendChild(all);
+  knownLocs.slice().sort().forEach(l => {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    sel.appendChild(o);
+  });
+  sel.value = current;
+  if(sel.value !== current) sel.value = '';
+}
+
+function learnLocations(hits){
+  let added = false;
+  hits.forEach(h => {
+    const locs = [h.auction_location].concat(h.transfer_locations || []);
+    locs.forEach(l => {
+      if(l && !knownLocs.includes(l)){ knownLocs.push(l); added = true; }
+    });
+  });
+  if(added) renderLocOptions();
+}
+
+/* ---------- fetch ---------- */
+async function fetchHits(q){
+  const r = await fetch(API_BASE + '?q=' + encodeURIComponent(q) + '&limit=50');
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  const data = await r.json();
+  return data.hits || [];
+}
+
+function corsMessage(e){
+  if(e instanceof TypeError) return "Couldn't reach mac.bid from this page (likely a CORS block). See the README for the 2-minute proxy fix.";
+  return e.message;
+}
+
+/* ---------- stars ---------- */
+function isStarred(lotId){ return stars.some(s => s.lot_id === lotId); }
+
+function toggleStar(h){
+  if(isStarred(h.lot_id)){
+    stars = stars.filter(s => s.lot_id !== h.lot_id);
+  } else {
+    stars.push(trimLot(h));
+  }
+  saveState();
+  renderStars();
+  renderResults();
+  syncSelectedStar();
+}
+
+function pruneStars(){
+  const before = stars.length;
+  stars = stars.filter(s => !lotClosed(s));
+  if(stars.length !== before) saveState();
+}
+
+function mkThumb(url, cls){
+  const img = document.createElement('img');
+  img.className = cls;
+  img.loading = 'lazy';
+  img.referrerPolicy = 'no-referrer';
+  img.alt = '';
+  if(url) img.src = url;
+  img.addEventListener('error', () => { img.style.visibility = 'hidden'; });
+  return img;
+}
+
+function mkStarBtn(h){
+  const b = document.createElement('button');
+  b.className = 'star-btn' + (isStarred(h.lot_id) ? ' on' : '');
+  b.textContent = isStarred(h.lot_id) ? '★' : '☆';
+  b.title = isStarred(h.lot_id) ? 'Stop watching' : 'Watch this item';
+  b.addEventListener('click', e => { e.stopPropagation(); toggleStar(h); });
+  return b;
+}
+
+function renderStars(){
+  pruneStars();
+  const card = $('watchCard');
+  const list = $('favList');
+  list.innerHTML = '';
+  if(stars.length === 0){
+    card.classList.remove('open');
+    return;
+  }
+  card.classList.add('open');
+  stars.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'fav-row';
+    row.appendChild(mkThumb(s.image_url, 'rr-thumb'));
+    const body = document.createElement('div');
+    body.className = 'rr-body';
+    const closes = timeLeft(s.expected_closing_utc);
+    body.innerHTML =
+      '<div class="rr-name">' + esc(s.product_name || s.auction_title) + '</div>' +
+      '<div class="rr-meta">' +
+        '<span class="rr-bid">Bid $' + (s.current_bid != null ? s.current_bid : '—') + '</span>' +
+        '<span>Retail <b>$' + (s.retail_price != null ? Number(s.retail_price).toFixed(0) : '—') + '</b></span>' +
+        '<span>' + esc(s.auction_location || '') + '</span>' +
+        (closes ? '<span class="fav-closes">Closes in ' + closes + '</span>' : '') +
+      '</div>';
+    body.addEventListener('click', () => selectLot(s));
+    const star = mkStarBtn(s);
+    row.append(body, star);
+    list.appendChild(row);
+  });
+}
+
+/* refresh one lot's live data by searching its name and matching lot_id */
+async function refreshLot(lotRef){
+  const q = lotRef.product_name || lotRef.auction_title;
+  if(!q) return null;
+  const hits = await fetchHits(q);
+  learnLocations(hits);
+  return hits.find(h => h.lot_id === lotRef.lot_id) || null;
+}
+
+async function refreshAll(){
+  if(stars.length === 0) return;
+  const btn = $('refreshAllBtn');
+  const status = $('watchStatus');
+  btn.disabled = true;
+  status.className = 'watch-status';
+  try{
+    for(let i = 0; i < stars.length; i++){
+      status.innerHTML = '<span class="spinner"></span>Updating ' + (i + 1) + ' of ' + stars.length + '…';
+      const fresh = await refreshLot(stars[i]);
+      if(fresh){
+        stars[i] = trimLot(fresh);
+        if(selectedLot && selectedLot.lot_id === fresh.lot_id) selectLot(stars[i]);
+      } else {
+        stars[i]._gone = true; // no longer listed — likely closed
+      }
+    }
+    stars = stars.filter(s => !s._gone && !lotClosed(s));
+    saveState();
+    renderStars();
+    status.textContent = 'Updated ' + new Date().toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) + ' — closed items removed.';
+  } catch(e){
+    status.className = 'watch-status err';
+    status.textContent = 'Refresh failed: ' + corsMessage(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- search ---------- */
+function renderResults(){
+  const results = $('results');
+  results.innerHTML = '';
+  if(lastHits.length === 0){ results.classList.remove('open'); return; }
+  lastHits.forEach(h => {
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    row.appendChild(mkThumb(h.image_url, 'rr-thumb'));
+    const body = document.createElement('div');
+    body.className = 'rr-body';
+    const state = h.us_state ? ' (' + h.us_state + ')' : '';
+    const closes = timeLeft(h.expected_closing_utc);
+    body.innerHTML =
+      '<div class="rr-name">' + esc(h.product_name || h.auction_title) + '</div>' +
+      '<div class="rr-meta">' +
+        '<span class="rr-bid">Bid $' + (h.current_bid != null ? h.current_bid : '—') + '</span>' +
+        '<span>Retail <b>$' + (h.retail_price != null ? Number(h.retail_price).toFixed(0) : '—') + '</b></span>' +
+        '<span>' + esc(h.condition || '') + '</span>' +
+        '<span>' + esc((h.auction_location || '') + state) + '</span>' +
+        (closes ? '<span>Closes in ' + closes + '</span>' : '') +
+      '</div>';
+    row.appendChild(body);
+    row.appendChild(mkStarBtn(h));
+    row.addEventListener('click', () => selectLot(h));
+    results.appendChild(row);
+  });
+  results.classList.add('open');
+}
+
+async function doSearch(){
+  const q = $('q').value.trim();
+  if(!q) return;
+  const btn = $('searchBtn');
+  const status = $('searchStatus');
+  btn.disabled = true;
+  status.className = 'search-status';
+  status.innerHTML = '<span class="spinner"></span>Searching mac.bid…';
+  lastHits = [];
+  renderResults();
+  try{
+    let hits = await fetchHits(q);
+    learnLocations(hits);
+    const loc = $('locSelect').value;
+    const totalN = hits.length;
+    if(loc){
+      hits = hits.filter(h => h.auction_location === loc || (h.transfer_locations || []).includes(loc));
+    }
+    lastHits = hits.slice(0, 15);
+    if(hits.length === 0){
+      status.textContent = loc
+        ? 'No lots for "' + q + '" near ' + loc + ' (' + totalN + ' elsewhere — try All locations).'
+        : 'No open lots found for "' + q + '".';
+      return;
+    }
+    status.textContent = (loc ? hits.length + ' of ' + totalN + ' results near ' + loc : hits.length + ' results') + ' — tap one to load it:';
+    renderResults();
+  } catch(e){
+    status.className = 'search-status err';
+    status.textContent = 'Search failed: ' + corsMessage(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function setTaxByState(code){
+  const name = STATE_NAMES[code];
+  if(!name) return;
+  const sel = $('taxSelect');
+  for(let i = 0; i < sel.options.length; i++){
+    if(sel.options[i].text.indexOf(name + ' —') === 0){
+      sel.selectedIndex = i;
+      $('customTaxField').style.display = 'none';
+      return;
+    }
+  }
+}
+
+function syncSelectedStar(){
+  if(!selectedLot) return;
+  const b = $('siStar');
+  const on = isStarred(selectedLot.lot_id);
+  b.classList.toggle('on', on);
+  b.textContent = on ? '★' : '☆';
+  b.title = on ? 'Stop watching' : 'Watch this item';
+}
+
+function selectLot(h){
+  selectedLot = h;
+  lastHits = [];
+  renderResults();
+  $('searchStatus').textContent = '';
+
+  $('bid').value = Number(h.current_bid) || 0;
+  setTaxByState(h.us_state);
+
+  const thumb = $('siThumb');
+  thumb.style.visibility = 'visible';
+  if(h.image_url) thumb.src = h.image_url; else thumb.style.visibility = 'hidden';
+
+  $('siName').textContent = h.product_name || h.auction_title || 'Selected item';
+  const bits = [];
+  if(h.condition) bits.push('<b>' + esc(h.condition) + '</b>');
+  if(h.auction_location) bits.push(esc(h.auction_location) + (h.us_state ? ', ' + esc(h.us_state) : ''));
+  if(h.retail_price) bits.push('Retail <b>$' + Number(h.retail_price).toFixed(2) + '</b>');
+  if(h.instant_win_price) bits.push('Instant win <b>$' + Number(h.instant_win_price).toFixed(0) + '</b>');
+  const closes = timeLeft(h.expected_closing_utc);
+  if(closes) bits.push('Closes in <b>' + closes + '</b>');
+  if(h.total_bids != null) bits.push(h.total_bids + ' bids');
+  bits.push('Current bid loaded below — adjust to what you plan to bid');
+  $('siMeta').innerHTML = bits.join(' · ');
+  $('selectedItem').classList.add('open');
+  syncSelectedStar();
+
+  update();
+}
+
+/* ---------- listeners ---------- */
+$('siClear').addEventListener('click', () => {
+  selectedLot = null;
+  $('selectedItem').classList.remove('open');
+  update();
+});
+
+$('siStar').addEventListener('click', () => { if(selectedLot) toggleStar(selectedLot); });
+
+$('siRefresh').addEventListener('click', async () => {
+  if(!selectedLot) return;
+  const btn = $('siRefresh');
+  btn.disabled = true;
+  btn.textContent = '…';
+  try{
+    const fresh = await refreshLot(selectedLot);
+    if(fresh){
+      if(isStarred(fresh.lot_id)){
+        stars = stars.map(s => s.lot_id === fresh.lot_id ? trimLot(fresh) : s);
+        renderStars();
+      }
+      selectLot(fresh);
+    } else {
+      $('searchStatus').className = 'search-status err';
+      $('searchStatus').textContent = 'This lot is no longer listed — it likely closed.';
+    }
+  } catch(e){
+    $('searchStatus').className = 'search-status err';
+    $('searchStatus').textContent = 'Refresh failed: ' + corsMessage(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻';
+  }
+});
+
+$('refreshAllBtn').addEventListener('click', refreshAll);
+
+$('searchBtn').addEventListener('click', doSearch);
+$('q').addEventListener('keydown', e => { if(e.key === 'Enter') doSearch(); });
+$('locSelect').addEventListener('change', () => { saveState(); if(lastHits.length || $('q').value.trim()) doSearch(); });
+
+$('taxSelect').addEventListener('change', function(){
+  $('customTaxField').style.display = this.value === 'custom' ? 'block' : 'none';
+  update();
+});
+$('customTax').addEventListener('input', update);
+$('bid').addEventListener('input', update);
+$('budget').addEventListener('input', update);
+$('assurance').addEventListener('change', function(){
+  $('assuranceFields').classList.toggle('open', this.checked);
+  update();
+});
+$('assuranceFee').addEventListener('input', update);
+
+restoreState();
+renderStars();
+update();
+</script>
+</body>
+</html>

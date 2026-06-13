@@ -1,0 +1,17 @@
+{
+  "name": "MAC.BID Fee Calculator",
+  "short_name": "MAC.BID Fees",
+  "description": "See exactly what you'll pay before you bid on MAC.BID",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#120b1f",
+  "theme_color": "#2b1e3e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
