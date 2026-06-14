@@ -10,6 +10,7 @@
   // badge with no whitespace separator) still parses correctly on mac.bid.
   const DOLLAR_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9,.])/g;
   const DEBOUNCE_MS = 150;
+  const BUDGETS_KEY = 'macbidBudgets';
 
   const fees = root.MacbidFees;
   const taxes = root.MacbidTaxes;
@@ -33,6 +34,8 @@
   let settings = fees.normalizeSettings(fees.DEFAULT_SETTINGS);
   let observer = null;
   let renderTimer = null;
+  let productBudget = '';
+  let productKey = null;
 
   function hasChromeStorage() {
     return Boolean(
@@ -41,6 +44,139 @@
         && root.chrome.storage.sync
         && typeof root.chrome.storage.sync.get === 'function',
     );
+  }
+
+  function hasChromeLocalStorage() {
+    return Boolean(
+      root.chrome
+        && root.chrome.storage
+        && root.chrome.storage.local
+        && typeof root.chrome.storage.local.get === 'function',
+    );
+  }
+
+  function getProductKey() {
+    try {
+      const params = new URLSearchParams(root.location.search);
+      const aid = params.get('aid');
+      const lid = params.get('lid');
+      if (aid && lid) {
+        return `aid=${aid}&lid=${lid}`;
+      }
+    } catch (error) {
+      // ignore — location may be unavailable in some test contexts
+    }
+    return null;
+  }
+
+  function parseCountdownMs(text) {
+    const norm = String(text || '').trim();
+
+    // "D:H:MM:SS" or "H:MM:SS"
+    const colonMatch = norm.match(/(?:(\d+):)?(\d+):(\d{2}):(\d{2})/);
+    if (colonMatch) {
+      const d = colonMatch[1] ? Number(colonMatch[1]) : 0;
+      const h = Number(colonMatch[2]);
+      const m = Number(colonMatch[3]);
+      const s = Number(colonMatch[4]);
+      return ((d * 24 + h) * 60 + m) * 60 * 1000 + s * 1000;
+    }
+
+    // "2d 3h 45m 22s" / "2 days 3 hours 45 minutes"
+    const d = (/(\d+)\s*d(?:ay)?s?/i.exec(norm) || [])[1];
+    const h = (/(\d+)\s*h(?:our)?s?/i.exec(norm) || [])[1];
+    const m = (/(\d+)\s*m(?:in(?:ute)?s?)?(?!\w)/i.exec(norm) || [])[1];
+    const s = (/(\d+)\s*s(?:ec(?:ond)?s?)?(?!\w)/i.exec(norm) || [])[1];
+    if (d || h || m || s) {
+      return (
+        (Number(d || 0) * 24 + Number(h || 0)) * 60 * 60 * 1000
+        + Number(m || 0) * 60 * 1000
+        + Number(s || 0) * 1000
+      );
+    }
+
+    return null;
+  }
+
+  function parseAuctionEndTime() {
+    const timers = Array.from(document.querySelectorAll('.lot-countdown-timer'))
+      .filter(isElementVisible);
+
+    for (const el of timers) {
+      const ms = parseCountdownMs(getText(el));
+      if (ms !== null && ms > 0) {
+        return Date.now() + ms;
+      }
+    }
+
+    return null;
+  }
+
+  function cleanupExpiredBudgets(callback) {
+    if (!hasChromeLocalStorage()) {
+      callback();
+      return;
+    }
+
+    root.chrome.storage.local.get(BUDGETS_KEY, (items) => {
+      if (root.chrome.runtime && root.chrome.runtime.lastError) {
+        callback();
+        return;
+      }
+
+      const budgets = (items && items[BUDGETS_KEY]) || {};
+      const now = Date.now();
+      let changed = false;
+      const cleaned = {};
+
+      for (const [key, entry] of Object.entries(budgets)) {
+        if (entry && entry.endsAt !== null && entry.endsAt !== undefined && entry.endsAt < now) {
+          changed = true;
+        } else {
+          cleaned[key] = entry;
+        }
+      }
+
+      if (changed) {
+        root.chrome.storage.local.set({ [BUDGETS_KEY]: cleaned }, callback);
+      } else {
+        callback();
+      }
+    });
+  }
+
+  function loadProductBudget(callback) {
+    if (!productKey || !hasChromeLocalStorage()) {
+      callback('');
+      return;
+    }
+
+    root.chrome.storage.local.get(BUDGETS_KEY, (items) => {
+      if (root.chrome.runtime && root.chrome.runtime.lastError) {
+        callback('');
+        return;
+      }
+
+      const budgets = (items && items[BUDGETS_KEY]) || {};
+      const entry = budgets[productKey];
+      callback(entry && entry.budget !== undefined ? String(entry.budget) : '');
+    });
+  }
+
+  function saveProductBudget(budgetValue) {
+    if (!productKey || !hasChromeLocalStorage()) {
+      return;
+    }
+
+    root.chrome.storage.local.get(BUDGETS_KEY, (items) => {
+      if (root.chrome.runtime && root.chrome.runtime.lastError) {
+        return;
+      }
+
+      const budgets = (items && items[BUDGETS_KEY]) || {};
+      budgets[productKey] = { budget: budgetValue, endsAt: parseAuctionEndTime() };
+      root.chrome.storage.local.set({ [BUDGETS_KEY]: budgets });
+    });
   }
 
   function normalizeStoredSettings(value) {
@@ -64,18 +200,6 @@
       });
     } catch (error) {
       callback(normalizeStoredSettings());
-    }
-  }
-
-  function persistSettings() {
-    if (!hasChromeStorage() || typeof root.chrome.storage.sync.set !== 'function') {
-      return;
-    }
-
-    try {
-      root.chrome.storage.sync.set({ [STORAGE_KEY]: settings });
-    } catch (error) {
-      // Ignore transient extension-context failures; the in-page estimate still updates.
     }
   }
 
@@ -493,11 +617,11 @@
   }
 
   function getBudgetAmount() {
-    if (settings.budget === null || settings.budget === undefined || String(settings.budget).trim() === '') {
+    if (productBudget === null || productBudget === undefined || String(productBudget).trim() === '') {
       return null;
     }
 
-    const amount = Number(settings.budget);
+    const amount = Number(productBudget);
     return Number.isFinite(amount) && amount > 0 ? amount : null;
   }
 
@@ -551,7 +675,7 @@
     }
 
     if (input && document.activeElement !== input) {
-      input.value = settings.budget === null || settings.budget === undefined ? '' : String(settings.budget);
+      input.value = productBudget === null || productBudget === undefined ? '' : String(productBudget);
     }
 
     updateBudgetResult(controls, effectiveSettings, currentTotal);
@@ -567,17 +691,14 @@
     input.min = '0';
     input.step = '0.01';
     input.placeholder = '0.00';
-    input.value = settings.budget === null || settings.budget === undefined ? '' : String(settings.budget);
+    input.value = productBudget === null || productBudget === undefined ? '' : String(productBudget);
     input.dataset.macbidBudgetInput = 'true';
     input.setAttribute('aria-label', 'Budget');
     result.dataset.macbidBudgetResult = 'true';
 
     input.addEventListener('input', () => {
-      settings = fees.normalizeSettings({
-        ...settings,
-        budget: input.value,
-      });
-      persistSettings();
+      productBudget = input.value;
+      saveProductBudget(input.value);
       updateBudgetResult(controls, effectiveSettings, currentTotal);
     });
 
@@ -798,6 +919,18 @@
   }
 
   function render() {
+    // Detect SPA navigation — productKey/productBudget need to swap when aid/lid change
+    const currentKey = getProductKey();
+    if (currentKey !== productKey) {
+      productKey = currentKey;
+      productBudget = '';
+      loadProductBudget((budget) => {
+        productBudget = budget;
+        scheduleRender();
+      });
+      return;
+    }
+
     if (!document.body) {
       return;
     }
@@ -902,9 +1035,15 @@
 
   loadSettings((storedSettings) => {
     settings = storedSettings;
-    render();
-    startObserver();
-    listenForStorageChanges();
+    productKey = getProductKey();
+    cleanupExpiredBudgets(() => {
+      loadProductBudget((budget) => {
+        productBudget = budget;
+        render();
+        startObserver();
+        listenForStorageChanges();
+      });
+    });
   });
 
   root.addEventListener('beforeunload', disconnectObserver, { once: true });
