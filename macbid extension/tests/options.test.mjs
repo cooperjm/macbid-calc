@@ -19,7 +19,7 @@ test('options header uses the extension PNG icon instead of a dollar sign marker
   const headerIconCss = optionsHtml.match(/\.header-icon\s*\{([\s\S]*?)\n    \}/);
 
   assert.ok(headerIconCss, 'header icon CSS block should exist');
-  assert.match(optionsHtml, /<img[^>]+class="header-icon"[^>]+src="icon128\.png"[^>]+alt="MAC\.BID True Price"/);
+  assert.match(optionsHtml, /<img[^>]+class="header-icon"[^>]+src="icon128\.png"[^>]+alt="True Price Calculator for MAC\.BID"/);
   assert.doesNotMatch(optionsHtml, /src="icon\.svg"/);
   assert.doesNotMatch(optionsHtml, /<div class="header-icon">\$<\/div>/);
   assert.doesNotMatch(headerIconCss[1], /padding:/);

@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "MAC.BID True Price",
+  "name": "True Price Calculator for MAC.BID",
   "version": "0.1.0",
   "description": "Estimate the actual MAC.BID total with fees and sales tax.",
   "permissions": [
