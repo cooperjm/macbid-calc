@@ -474,8 +474,13 @@
       .filter((node) => node !== document.body && node !== document.documentElement)
       .filter((node) => isElementVisible(node))
       .filter((node) => {
+        // Exclude BEM child elements (lot-card__price-current, lot-card__price-retail,
+        // etc.) — these are content slots inside cards, not card containers.
+        const cls = typeof node.className === 'string' ? node.className : '';
+        if (/__/.test(cls)) return false;
         const text = node.innerText || node.textContent || '';
-        return text.length < 2000 && /\b(?:current|high)\s+bid\b|\$[0-9]/i.test(text);
+        const dollarCount = (text.match(/\$[0-9]/g) || []).length;
+        return text.length < 1200 && dollarCount <= 6 && /\b(?:current|high)\s+bid\b|\$[0-9]/i.test(text);
       });
   }
 
@@ -485,29 +490,53 @@
     return clone.innerText || clone.textContent || '';
   }
 
+  function extractCardPrice(card, classFragment) {
+    const el = card.querySelector(`[class*="${classFragment}"]`);
+    if (!el || isInsideOverlay(el)) {
+      return undefined; // element absent — caller may fall back to text parsing
+    }
+    return parser.parseCurrency(el.innerText || el.textContent || '');
+    // returns null if element exists but is empty/unparseable — caller should wait
+  }
+
   function renderListingBadges() {
     const candidates = getListingCandidates();
 
     candidates.slice(0, 80).forEach((card) => {
+      // If an ancestor element was already badged this render pass, skip this
+      // descendant — prevents double-badges when parent and child both match.
+      let ancestor = card.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        if (ancestor.querySelector(':scope > .macbid-tp-badge--listing')) return;
+        ancestor = ancestor.parentElement;
+      }
+
       const cardText = getCardTextWithoutBadge(card);
       const snapshot = typeof parser.parseListingSnapshotFromText === 'function'
         ? parser.parseListingSnapshotFromText(cardText)
         : parser.parseSnapshotFromText(cardText);
 
-      if (snapshot.currentBid === null || snapshot.currentBid === undefined) {
+      // Read prices directly from the known price elements. Text-parsing is
+      // unreliable on listing cards (picks up wrong prices from neighbours),
+      // so we only badge once we have a confirmed number from the DOM.
+      const currentBid = extractCardPrice(card, 'price-current');
+      const retailPrice = extractCardPrice(card, 'price-retail') ?? snapshot.retailPrice;
+
+      if (!Number.isFinite(currentBid)) {
         return;
       }
 
+      const resolvedSnapshot = { ...snapshot, currentBid, retailPrice };
       const taxSelection = taxes.selectTaxRate({
         settings,
         locationName: snapshot.locationName,
         stateCode: snapshot.stateCode,
       });
-      const effectiveSettings = getEffectiveSettings(snapshot, taxSelection);
-      const total = fees.calculateTotal(snapshot.currentBid, effectiveSettings);
-      const quality = getDealQuality(total.total, snapshot.retailPrice);
+      const effectiveSettings = getEffectiveSettings(resolvedSnapshot, taxSelection);
+      const total = fees.calculateTotal(currentBid, effectiveSettings);
+      const quality = getDealQuality(total.total, retailPrice);
       const signature = JSON.stringify({
-        bid: snapshot.currentBid,
+        bid: currentBid,
         assuranceFee: snapshot.assuranceFee,
         stateCode: snapshot.stateCode,
         locationName: snapshot.locationName,
