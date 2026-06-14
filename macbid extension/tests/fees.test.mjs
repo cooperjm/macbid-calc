@@ -95,3 +95,9 @@ test('normalizeSettings preserves explicit zero numeric inputs', () => {
   assert.equal(fees.normalizeSettings({ customTaxRate: 0 }).customTaxRate, 0);
   assert.equal(fees.normalizeSettings({ customTaxRate: '0' }).customTaxRate, 0);
 });
+
+test('normalizeSettings stores the optional RGB glow setting', () => {
+  assert.equal(fees.DEFAULT_SETTINGS.rgbGlowEnabled, false);
+  assert.equal(fees.normalizeSettings({ rgbGlowEnabled: true }).rgbGlowEnabled, true);
+  assert.equal(fees.normalizeSettings({ rgbGlowEnabled: false }).rgbGlowEnabled, false);
+});

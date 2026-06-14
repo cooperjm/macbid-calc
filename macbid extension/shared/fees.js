@@ -9,6 +9,7 @@
     customTaxEnabled: false,
     customTaxRate: null,
     budget: '',
+    rgbGlowEnabled: false,
   });
 
   function roundCurrency(value) {
@@ -75,6 +76,7 @@
       customTaxEnabled: Boolean(input.customTaxEnabled ?? DEFAULT_SETTINGS.customTaxEnabled),
       customTaxRate: normalizeRate(input.customTaxRate, DEFAULT_SETTINGS.customTaxRate),
       budget: input.budget ?? DEFAULT_SETTINGS.budget,
+      rgbGlowEnabled: Boolean(input.rgbGlowEnabled ?? DEFAULT_SETTINGS.rgbGlowEnabled),
     };
 
     if ('taxRate' in input) {

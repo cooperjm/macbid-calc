@@ -48,6 +48,60 @@ test('parseSnapshotFromText extracts visible auction values', () => {
   assert.match(snapshot.locationName, /Pittsburgh Mills/);
 });
 
+test('parseAssuranceFee ignores earlier bid prices in a broad bid card', () => {
+  const fee = parser.parseAssuranceFee(`
+    $68
+    -85%
+    Set your max bid:
+    $69
+    Bid Now
+    Add Buyer's Assurance protection for $14.00
+    Get a 5-business-day return guarantee.
+  `);
+
+  assert.equal(fee, 14);
+});
+
+test('parseSnapshotFromText recognizes high bid labels and ignores bid buttons', () => {
+  const highBidSnapshot = parser.parseSnapshotFromText('High Bid $42\nLocation Akron, OH');
+  const buttonSnapshot = parser.parseSnapshotFromText('Bid Now\nRetail Price $199\nLocation Rock Hill, SC');
+
+  assert.equal(highBidSnapshot.currentBid, 42);
+  assert.equal(highBidSnapshot.stateCode, 'OH');
+  assert.equal(buttonSnapshot.currentBid, null);
+  assert.equal(buttonSnapshot.stateCode, 'SC');
+});
+
+test('parseListingSnapshotFromText recognizes compact bid labels', () => {
+  const snapshot = parser.parseListingSnapshotFromText('Bid $18\nLocation Rock Hill, SC');
+
+  assert.equal(snapshot.currentBid, 18);
+  assert.equal(snapshot.stateCode, 'SC');
+});
+
+test('parseListingSnapshotFromText uses a single unlabeled card price as bid', () => {
+  const snapshot = parser.parseListingSnapshotFromText(`
+    Small Appliance
+    $42
+    Pittsburgh Mills, PA
+  `);
+
+  assert.equal(snapshot.currentBid, 42);
+  assert.equal(snapshot.stateCode, 'PA');
+});
+
+test('parseListingSnapshotFromText does not guess when multiple unlabeled prices remain', () => {
+  const snapshot = parser.parseListingSnapshotFromText(`
+    Small Appliance
+    $42
+    Compare at $99
+    Pittsburgh Mills, PA
+  `);
+
+  assert.equal(snapshot.currentBid, null);
+  assert.equal(snapshot.stateCode, 'PA');
+});
+
 test('parseSnapshotFromText bounds values between labels on one line', () => {
   const snapshot = parser.parseSnapshotFromText('Retail Price $199 Current Bid $55 Location Pittsburgh Mills, PA');
 

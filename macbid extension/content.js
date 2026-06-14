@@ -5,6 +5,7 @@
   const STORAGE_KEY = 'macbidTruePriceSettings';
   const ITEM_PATH_PATTERN = /\/(?:auction|lot|product|item)(?:\/|$|[-_])/i;
   const BID_LABEL_PATTERN = /\b(?:current|high)\s+bid\b/i;
+  const DOLLAR_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9A-Za-z,.])/g;
   const DEBOUNCE_MS = 150;
 
   const fees = root.MacbidFees;
@@ -83,8 +84,18 @@
     return percentFormatter.format(Number.isFinite(Number(value)) ? Number(value) : 0);
   }
 
+  function getDealQuality(totalAmount, retailPrice) {
+    if (!retailPrice || !Number.isFinite(retailPrice) || retailPrice <= 0 || !Number.isFinite(totalAmount)) {
+      return null;
+    }
+    const ratio = totalAmount / retailPrice;
+    if (ratio < 0.40) return 'good';
+    if (ratio < 0.65) return 'ok';
+    return 'bad';
+  }
+
   function getSnapshot() {
-    return parser.parseSnapshotFromDocument(document);
+    return getDetailSnapshot() || parser.parseSnapshotFromDocument(document);
   }
 
   function isLikelyItemPage(snapshot) {
@@ -161,12 +172,149 @@
     return textNode ? getNearestInsertionElement(textNode.parentElement) : null;
   }
 
-  function findInsertionTarget() {
+  function getText(element) {
+    return element ? element.innerText || element.textContent || '' : '';
+  }
+
+  function findDollarAmounts(text) {
+    if (typeof text !== 'string') {
+      return [];
+    }
+
+    return Array.from(text.matchAll(DOLLAR_PATTERN))
+      .map((match) => Number(match[1].replace(/,/g, '')))
+      .filter(Number.isFinite);
+  }
+
+  function findBidNowElement() {
+    return Array.from(document.querySelectorAll('button, a, [role="button"]'))
+      .find((element) => isElementVisible(element) && /\bbid\s+now\b/i.test(getText(element)));
+  }
+
+  function findDetailBidCard() {
+    const bidNow = findBidNowElement();
+
+    if (!bidNow) {
+      return null;
+    }
+
+    let current = bidNow;
+
+    while (current && current !== document.body) {
+      const text = getText(current);
+
+      if (
+        /\bset\s+your\s+max\s+bid\b/i.test(text)
+        && current.querySelector('.lot-countdown-timer')
+      ) {
+        return current;
+      }
+
+      current = current.parentElement;
+    }
+
+    return bidNow.parentElement || bidNow;
+  }
+
+  function getDetailInjectionTarget(card) {
+    if (!card) {
+      return null;
+    }
+
+    const countdown = card.querySelector('.lot-countdown-timer');
+    return countdown ? countdown.closest('div[style]') || countdown : card;
+  }
+
+  function getDetailPriceText(card) {
+    const clone = card.cloneNode(true);
+    clone.querySelectorAll('select, option, button, input, .macbid-tp-panel, .macbid-tp-badge').forEach((node) => node.remove());
+    return getText(clone);
+  }
+
+  function getAssuranceState(card) {
+    const assurancePattern = /\bbuyer'?s\s+assurance\b/i;
+    const checkboxes = Array.from(card.querySelectorAll('input[type="checkbox"]'));
+    const checkbox = checkboxes.find((input) => {
+      const localContainer = input.closest('label') || input.parentElement || input.closest('div') || card;
+      return assurancePattern.test(getText(localContainer));
+    }) || null;
+    const assuranceElement = Array.from(card.querySelectorAll('label, p, span, div'))
+      .filter((element) => assurancePattern.test(getText(element)))
+      .sort((left, right) => getText(left).length - getText(right).length)[0];
+
+    if (!assuranceElement && !checkbox) {
+      return { selected: false, fee: null };
+    }
+
+    const textSources = [
+      checkbox && checkbox.closest('label'),
+      checkbox && checkbox.parentElement,
+      checkbox && checkbox.closest('div'),
+      assuranceElement,
+      card,
+    ].filter(Boolean);
+    const fee = textSources.reduce((foundFee, element) => {
+      if (foundFee !== null && foundFee !== undefined) {
+        return foundFee;
+      }
+
+      return parser.parseAssuranceFee(getText(element));
+    }, null);
+
+    return {
+      selected: Boolean(checkbox && checkbox.checked),
+      fee,
+    };
+  }
+
+  function removeListingBadges() {
+    document.querySelectorAll('.macbid-tp-badge--listing').forEach((badge) => {
+      if (!isInsideOverlay(badge)) {
+        badge.remove();
+      }
+    });
+  }
+
+  function getDetailSnapshot() {
+    const container = findDetailBidCard();
+
+    if (!container) {
+      return null;
+    }
+
+    const amounts = findDollarAmounts(getDetailPriceText(container));
+
+    if (amounts.length === 0) {
+      return null;
+    }
+
+    const baseSnapshot = parser.parseSnapshotFromDocument(document);
+    const assurance = getAssuranceState(container);
+    const retailPrice = baseSnapshot.retailPrice
+      || amounts.slice(1).find((amount) => amount > amounts[0])
+      || null;
+
+    return {
+      ...baseSnapshot,
+      currentBid: amounts[0],
+      retailPrice,
+      assuranceFee: assurance.fee,
+      assuranceSelected: assurance.selected,
+      detailContainer: container,
+      detailInsertionTarget: getDetailInjectionTarget(container),
+    };
+  }
+
+  function findInsertionTarget(snapshot) {
     if (!document.body) {
       return null;
     }
 
-    return findBidLabelTarget() || document.body.firstElementChild || document.body;
+    return findBidLabelTarget()
+      || (snapshot && snapshot.detailInsertionTarget)
+      || (snapshot && snapshot.detailContainer)
+      || document.body.firstElementChild
+      || document.body;
   }
 
   function getOrCreateRoot() {
@@ -231,12 +379,15 @@
   function getEffectiveSettings(snapshot, taxSelection) {
     const effectiveSettings = {
       ...settings,
+      assuranceEnabled: false,
       taxRate: taxSelection.rate,
     };
 
-    if (snapshot.assuranceFee !== null && snapshot.assuranceFee !== undefined) {
+    if (snapshot.assuranceSelected) {
       effectiveSettings.assuranceEnabled = true;
-      effectiveSettings.assuranceFee = snapshot.assuranceFee;
+      effectiveSettings.assuranceFee = snapshot.assuranceFee !== null && snapshot.assuranceFee !== undefined
+        ? snapshot.assuranceFee
+        : settings.assuranceFee;
     }
 
     return fees.normalizeSettings(effectiveSettings);
@@ -251,7 +402,7 @@
     return Number.isFinite(amount) && amount > 0 ? amount : null;
   }
 
-  function updateBudgetResult(container, effectiveSettings) {
+  function updateBudgetResult(container, effectiveSettings, currentTotal) {
     const result = container.querySelector('[data-macbid-budget-result]');
     const budgetAmount = getBudgetAmount();
 
@@ -261,13 +412,28 @@
 
     if (budgetAmount === null) {
       result.textContent = '';
+      result.className = 'macbid-tp-badge';
       return;
     }
 
-    result.textContent = `Max safe bid: ${formatCurrency(fees.maxBidFromBudget(budgetAmount, effectiveSettings))}`;
+    const maxBid = fees.maxBidFromBudget(budgetAmount, effectiveSettings);
+
+    if (currentTotal !== null && currentTotal !== undefined && Number.isFinite(currentTotal)) {
+      const excess = fees.roundCurrency(currentTotal - budgetAmount);
+      if (excess > 0) {
+        result.textContent = `Exceeds budget by ${formatCurrency(excess)}`;
+        result.className = 'macbid-tp-badge macbid-tp-badge--over-budget';
+      } else {
+        result.textContent = `Fits • Max safe bid: ${formatCurrency(maxBid)}`;
+        result.className = 'macbid-tp-badge macbid-tp-badge--fits-budget';
+      }
+    } else {
+      result.textContent = `Max safe bid: ${formatCurrency(maxBid)}`;
+      result.className = 'macbid-tp-badge';
+    }
   }
 
-  function createBudgetControls(effectiveSettings) {
+  function createBudgetControls(effectiveSettings, currentTotal) {
     const controls = createElement('div', 'macbid-tp-controls');
     const label = createElement('label', '', 'Budget ');
     const input = document.createElement('input');
@@ -287,12 +453,12 @@
         budget: input.value,
       });
       persistSettings();
-      updateBudgetResult(controls, effectiveSettings);
+      updateBudgetResult(controls, effectiveSettings, currentTotal);
     });
 
     label.append(input);
     controls.append(label, result);
-    updateBudgetResult(controls, effectiveSettings);
+    updateBudgetResult(controls, effectiveSettings, currentTotal);
 
     return controls;
   }
@@ -323,7 +489,10 @@
     const candidates = getListingCandidates();
 
     candidates.slice(0, 80).forEach((card) => {
-      const snapshot = parser.parseSnapshotFromText(getCardTextWithoutBadge(card));
+      const cardText = getCardTextWithoutBadge(card);
+      const snapshot = typeof parser.parseListingSnapshotFromText === 'function'
+        ? parser.parseListingSnapshotFromText(cardText)
+        : parser.parseSnapshotFromText(cardText);
 
       if (snapshot.currentBid === null || snapshot.currentBid === undefined) {
         return;
@@ -336,17 +505,22 @@
       });
       const effectiveSettings = getEffectiveSettings(snapshot, taxSelection);
       const total = fees.calculateTotal(snapshot.currentBid, effectiveSettings);
+      const quality = getDealQuality(total.total, snapshot.retailPrice);
       const signature = JSON.stringify({
         bid: snapshot.currentBid,
         assuranceFee: snapshot.assuranceFee,
         stateCode: snapshot.stateCode,
         locationName: snapshot.locationName,
         total: total.total,
+        quality,
       });
-      let badge = card.querySelector(':scope > .macbid-tp-badge');
+      let badge = card.querySelector(':scope > .macbid-tp-badge--listing');
 
       if (!badge) {
-        badge = createElement('span', 'macbid-tp-badge');
+        badge = createElement('span', 'macbid-tp-badge macbid-tp-badge--listing');
+        if (root.getComputedStyle(card).position === 'static') {
+          card.style.position = 'relative';
+        }
         card.insertAdjacentElement('afterbegin', badge);
       }
 
@@ -354,14 +528,41 @@
         badge.textContent = `Est. ${formatCurrency(total.total)}`;
         badge.title = `Estimated total with fees and ${taxSelection.label}`;
         badge.dataset.macbidSignature = signature;
+        badge.className = `macbid-tp-badge macbid-tp-badge--listing${quality ? ` macbid-tp-badge--${quality}` : ''}`;
       }
     });
   }
 
   function renderWarning(overlayRoot) {
     overlayRoot.replaceChildren(
-      createElement('div', 'macbid-tp-warning', 'Current bid not found. MAC.BID True Price will update when the bid appears.'),
+      createElement('div', 'macbid-tp-warning macbid-tp-warning--waiting', 'Waiting for current bid… The estimate will update automatically when it appears.'),
     );
+  }
+
+  function createSavingsBar(totalAmount, retailPrice) {
+    if (!retailPrice || !Number.isFinite(retailPrice) || retailPrice <= 0) {
+      return null;
+    }
+    const ratio = Math.min(1, Math.max(0, totalAmount / retailPrice));
+    const quality = getDealQuality(totalAmount, retailPrice);
+    const bar = createElement('div', 'macbid-tp-savings-bar');
+    const fill = createElement('div', `macbid-tp-savings-fill${quality ? ` macbid-tp-savings-fill--${quality}` : ''}`);
+    fill.style.width = `${Math.round(ratio * 100)}%`;
+    bar.append(fill);
+    return bar;
+  }
+
+  function createBreakdownToggle(breakdown) {
+    const toggle = createElement('button', 'macbid-tp-breakdown-toggle', 'Show breakdown ▾');
+    breakdown.classList.add('macbid-tp-breakdown--collapsed');
+    toggle.type = 'button';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.addEventListener('click', () => {
+      const isCollapsed = breakdown.classList.toggle('macbid-tp-breakdown--collapsed');
+      toggle.textContent = isCollapsed ? 'Show breakdown ▾' : 'Hide breakdown ▴';
+      toggle.setAttribute('aria-expanded', String(!isCollapsed));
+    });
+    return toggle;
   }
 
   function renderPanel(overlayRoot, snapshot) {
@@ -372,13 +573,47 @@
     });
     const effectiveSettings = getEffectiveSettings(snapshot, taxSelection);
     const total = fees.calculateTotal(snapshot.currentBid, effectiveSettings);
+    const quality = getDealQuality(total.total, snapshot.retailPrice);
+    const signature = JSON.stringify({
+      total: total.total,
+      bid: total.bid,
+      premium: total.premium,
+      premiumRate: effectiveSettings.premiumRate,
+      lotFee: total.lotFee,
+      assurance: total.assurance,
+      taxAmount: total.taxAmount,
+      taxRate: total.taxRate,
+      overhead: total.overhead,
+      retailPrice: snapshot.retailPrice,
+      taxLabel: taxSelection.label,
+      budget: settings.budget,
+      rgb: settings.rgbGlowEnabled,
+      quality,
+    });
+    const existingPanel = overlayRoot.firstElementChild;
+
+    if (existingPanel && existingPanel.dataset.macbidSig === signature) {
+      return;
+    }
+
     const panel = createElement('div', 'macbid-tp-panel');
     const taxNote = `${taxSelection.label}: ${formatPercent(taxSelection.rate)} estimate. Local taxes may vary.`;
     const breakdown = createElement('div', 'macbid-tp-breakdown');
 
+    panel.dataset.macbidSig = signature;
+
+    if (settings.rgbGlowEnabled) {
+      panel.classList.add('macbid-tp-panel-rgb');
+    }
+
+    const totalEl = createElement('p', 'macbid-tp-total', formatCurrency(total.total));
+    if (quality) {
+      totalEl.classList.add(`macbid-tp-total--${quality}`);
+    }
+
     panel.append(
       createElement('p', 'macbid-tp-kicker', 'Estimated total'),
-      createElement('p', 'macbid-tp-total', formatCurrency(total.total)),
+      totalEl,
       createElement('p', 'macbid-tp-note', taxNote),
     );
 
@@ -388,6 +623,10 @@
         'macbid-tp-note',
         `${formatPercent(total.total / snapshot.retailPrice)} of ${formatCurrency(snapshot.retailPrice)} retail`,
       ));
+      const savingsBar = createSavingsBar(total.total, snapshot.retailPrice);
+      if (savingsBar) {
+        panel.append(savingsBar);
+      }
     }
 
     breakdown.append(
@@ -399,7 +638,8 @@
       createRow('Fees above bid', formatCurrency(total.overhead)),
     );
 
-    panel.append(breakdown, createBudgetControls(effectiveSettings));
+    const toggle = createBreakdownToggle(breakdown);
+    panel.append(toggle, breakdown, createBudgetControls(effectiveSettings, total.total));
     overlayRoot.replaceChildren(panel);
   }
 
@@ -408,9 +648,15 @@
       return;
     }
 
-    renderListingBadges();
-
     const snapshot = getSnapshot();
+    const hasDetailView = Boolean(snapshot.detailContainer);
+
+    if (hasDetailView) {
+      removeListingBadges();
+    } else {
+      renderListingBadges();
+    }
+
     const likelyItemPage = isLikelyItemPage(snapshot);
 
     if (!likelyItemPage) {
@@ -418,7 +664,7 @@
       return;
     }
 
-    const target = findInsertionTarget();
+    const target = findInsertionTarget(snapshot);
     const overlayRoot = getOrCreateRoot();
 
     if (!placeRoot(overlayRoot, target)) {

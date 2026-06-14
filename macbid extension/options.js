@@ -27,8 +27,7 @@
   function fillForm(settings) {
     getElement('premiumRate').value = percentFromRate(settings.premiumRate);
     getElement('lotFee').value = settings.lotFee;
-    getElement('assuranceEnabled').checked = settings.assuranceEnabled;
-    getElement('assuranceFee').value = settings.assuranceFee;
+    getElement('rgbGlowEnabled').checked = settings.rgbGlowEnabled;
     getElement('customTaxEnabled').checked = settings.customTaxEnabled;
     getElement('customTaxRate').value = percentFromRate(settings.customTaxRate);
   }
@@ -37,8 +36,7 @@
     return fees.normalizeSettings({
       premiumRate: rateFromPercent(getElement('premiumRate').value),
       lotFee: getElement('lotFee').value,
-      assuranceEnabled: getElement('assuranceEnabled').checked,
-      assuranceFee: getElement('assuranceFee').value,
+      rgbGlowEnabled: getElement('rgbGlowEnabled').checked,
       customTaxEnabled: getElement('customTaxEnabled').checked,
       customTaxRate: rateFromPercent(getElement('customTaxRate').value),
     });

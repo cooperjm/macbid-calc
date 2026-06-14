@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MAC.BID True Price — Options</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      background: #f5f1fa;
+      color: #24122f;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px 48px;
+    }
+
+    .page {
+      margin: 0 auto;
+      max-width: 520px;
+    }
+
+    .header {
+      align-items: center;
+      display: flex;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .header-icon {
+      align-items: center;
+      background: #24122f;
+      border-radius: 12px;
+      color: #7cb02d;
+      display: flex;
+      font-size: 22px;
+      font-weight: 900;
+      height: 44px;
+      justify-content: center;
+      width: 44px;
+    }
+
+    .header-text h1 {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin: 0 0 2px;
+    }
+
+    .header-text p {
+      color: #6b7280;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid rgba(31, 41, 55, 0.1);
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(31, 41, 55, 0.06);
+      margin-bottom: 14px;
+      padding: 20px;
+    }
+
+    .card-title {
+      color: #6f8f21;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      margin: 0 0 14px;
+      text-transform: uppercase;
+    }
+
+    .field {
+      margin: 0 0 14px;
+    }
+
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      color: #374151;
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .field input[type="number"] {
+      background: #fafafa;
+      border: 1px solid rgba(31, 41, 55, 0.18);
+      border-radius: 10px;
+      color: #111827;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 9px 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+    }
+
+    .field input:focus {
+      border-color: #7cb02d;
+      box-shadow: 0 0 0 3px rgba(124, 176, 45, 0.18);
+      outline: none;
+    }
+
+    .toggle-field {
+      align-items: flex-start;
+      display: flex;
+      gap: 10px;
+      margin: 8px 0;
+    }
+
+    .toggle-field input[type="checkbox"] {
+      accent-color: #7cb02d;
+      cursor: pointer;
+      flex-shrink: 0;
+      height: 16px;
+      margin-top: 2px;
+      width: 16px;
+    }
+
+    .toggle-field label {
+      color: #374151;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toggle-field .hint {
+      color: #9ca3af;
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid rgba(31, 41, 55, 0.08);
+      margin: 14px 0;
+    }
+
+    .actions {
+      align-items: center;
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 11px 20px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary {
+      background: #24122f;
+      color: #fff;
+      flex: 1;
+    }
+
+    .btn-primary:hover { background: #3d1f50; }
+
+    .btn-secondary {
+      background: #eee8f5;
+      color: #24122f;
+    }
+
+    .btn-secondary:hover { background: #e0d5f0; }
+
+    #status {
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-top: 12px;
+      min-height: 20px;
+      padding: 0;
+      transition: background 0.2s, padding 0.2s;
+    }
+
+    #status:not(:empty) {
+      background: #eef7df;
+      color: #416400;
+      padding: 8px 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background: #0f0a1a; color: #e5e7eb; }
+
+      .header-text p { color: #9ca3af; }
+
+      .card {
+        background: #1e1529;
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
+
+      .card-title { color: #a3c74f; }
+
+      .field label { color: #d1d5db; }
+
+      .field input[type="number"] {
+        background: #2d2438;
+        border-color: rgba(255, 255, 255, 0.14);
+        color: #f3f4f6;
+      }
+
+      .field input:focus {
+        border-color: #7cb02d;
+        box-shadow: 0 0 0 3px rgba(124, 176, 45, 0.2);
+      }
+
+      .toggle-field label { color: #d1d5db; }
+      .toggle-field .hint { color: #6b7280; }
+
+      .divider { border-top-color: rgba(255, 255, 255, 0.08); }
+
+      .btn-primary { background: #7cb02d; color: #0f0a1a; }
+      .btn-primary:hover { background: #8dc234; }
+
+      .btn-secondary { background: #2d2438; color: #e5e7eb; }
+      .btn-secondary:hover { background: #3d2e4a; }
+
+      #status:not(:empty) { background: #1a2d0a; color: #a3c74f; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="header">
+      <div class="header-icon">$</div>
+      <div class="header-text">
+        <h1>MAC.BID True Price</h1>
+        <p>Estimate settings — values are still approximations</p>
+      </div>
+    </header>
+
+    <div class="card">
+      <p class="card-title">Fees</p>
+
+      <div class="field">
+        <label for="premiumRate">Buyer's premium (%)</label>
+        <input id="premiumRate" type="number" min="0" step="0.1" placeholder="15">
+      </div>
+
+      <div class="field">
+        <label for="lotFee">Lot fee ($)</label>
+        <input id="lotFee" type="number" min="0" step="0.01" placeholder="3.00">
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Tax</p>
+
+      <div class="toggle-field">
+        <input id="customTaxEnabled" type="checkbox">
+        <label for="customTaxEnabled">
+          Use custom tax rate by default
+          <span class="hint">Overrides location-based estimates</span>
+        </label>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label for="customTaxRate">Custom tax rate (%)</label>
+        <input id="customTaxRate" type="number" min="0" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Display</p>
+
+      <div class="toggle-field">
+        <input id="rgbGlowEnabled" type="checkbox">
+        <label for="rgbGlowEnabled">
+          RGB glow border on estimate card
+          <span class="hint">Animated rainbow border around the price panel</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="save" type="button">Save settings</button>
+      <button class="btn btn-secondary" id="reset" type="button">Reset defaults</button>
+    </div>
+    <div id="status" role="status"></div>
+  </div>
+
+  <script src="shared/fees.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

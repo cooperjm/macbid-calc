@@ -63,11 +63,13 @@
   );
 
   const LABEL_PATTERNS = Object.freeze({
-    currentBid: /\bcurrent\s+bid\b/i,
+    currentBid: /\b(?:current\s+bid|high\s+bid|winning\s+bid)\b/i,
     retailPrice: /\bretail\s+price\b/i,
     assuranceFee: /\bbuyer'?s\s+assurance\b/i,
     locationName: /\blocation\b/i,
   });
+
+  const CURRENCY_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9A-Za-z,.])/g;
 
   function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -82,14 +84,49 @@
       return null;
     }
 
-    const match = value.match(/\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9A-Za-z,.])/);
+    const match = value.match(CURRENCY_PATTERN);
 
     if (!match) {
       return null;
     }
 
-    const amount = Number(match[1].replace(/,/g, ''));
+    const amountMatch = match[0].match(/\$\s*(.+)$/);
+    const amount = amountMatch ? Number(amountMatch[1].replace(/,/g, '')) : NaN;
     return Number.isFinite(amount) ? amount : null;
+  }
+
+  function findCurrencyAmounts(value) {
+    if (typeof value !== 'string') {
+      return [];
+    }
+
+    return Array.from(value.matchAll(CURRENCY_PATTERN))
+      .map((match) => Number(match[1].replace(/,/g, '')))
+      .filter(Number.isFinite);
+  }
+
+  function parseAssuranceFee(value) {
+    const text = normalizeText(value);
+
+    if (!text.trim()) {
+      return null;
+    }
+
+    const match = /\bbuyer'?s\s+assurance\b/i.exec(text);
+
+    if (!match) {
+      return null;
+    }
+
+    const afterLabel = text.slice(match.index + match[0].length);
+    const labelWindow = afterLabel.slice(0, 240);
+    const feeAfterLabel = parseCurrency(labelWindow);
+
+    if (feeAfterLabel !== null && feeAfterLabel !== undefined) {
+      return feeAfterLabel;
+    }
+
+    return parseCurrency(text.slice(match.index, match.index + 240));
   }
 
   function extractStateCode(value) {
@@ -231,13 +268,47 @@
     const lines = getLines(text);
     const locationName = findLocationValue(lines);
 
+    const assuranceFee = parseAssuranceFee(normalizeText(text));
+
     return {
       currentBid: parseCurrency(findLabeledValue(lines, LABEL_PATTERNS.currentBid)),
       retailPrice: parseCurrency(findLabeledValue(lines, LABEL_PATTERNS.retailPrice)),
-      assuranceFee: parseCurrency(findLabeledValue(lines, LABEL_PATTERNS.assuranceFee)),
+      assuranceFee: assuranceFee !== null && assuranceFee !== undefined
+        ? assuranceFee
+        : parseCurrency(findLabeledValue(lines, LABEL_PATTERNS.assuranceFee)),
       stateCode: extractStateCode(locationName || normalizeText(text)),
       locationName,
     };
+  }
+
+  function parseListingSnapshotFromText(text) {
+    const snapshot = parseSnapshotFromText(text);
+
+    if (snapshot.currentBid !== null && snapshot.currentBid !== undefined) {
+      return snapshot;
+    }
+
+    const lines = getLines(text)
+      .filter((line) => !/\b(?:retail|msrp|assurance|estimated|est\.)\b/i.test(line));
+    const bidLine = lines.find((line) => /\b(?:current|high|winning)?\s*bid\b/i.test(line) && parseCurrency(line) !== null);
+
+    if (bidLine) {
+      return {
+        ...snapshot,
+        currentBid: parseCurrency(bidLine),
+      };
+    }
+
+    const amounts = findCurrencyAmounts(lines.join('\n'));
+
+    if (amounts.length === 1) {
+      return {
+        ...snapshot,
+        currentBid: amounts[0],
+      };
+    }
+
+    return snapshot;
   }
 
   function parseSnapshotFromDocument(doc) {
@@ -248,8 +319,10 @@
 
   const api = {
     parseCurrency,
+    parseAssuranceFee,
     extractStateCode,
     parseSnapshotFromText,
+    parseListingSnapshotFromText,
     parseSnapshotFromDocument,
   };
 

@@ -1,0 +1,406 @@
+#macbid-true-price-root {
+  color: #24122f;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  margin: 14px 0 18px;
+  position: relative;
+  z-index: 2;
+}
+
+.macbid-tp-panel {
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbf0 100%);
+  border: 1px solid rgba(124, 176, 45, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 10px 24px rgba(31, 41, 55, 0.08);
+  color: #1f2937;
+  max-width: none;
+  padding: 16px;
+}
+
+@property --macbid-rgb-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.macbid-tp-panel-rgb {
+  animation: macbid-rgb-glow 4s linear infinite;
+  background: transparent;
+  border: 0;
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+@keyframes macbid-rgb-glow {
+  0% {
+    box-shadow:
+      0 10px 24px rgba(31, 41, 55, 0.08),
+      0 8px 32px -4px rgba(255, 45, 85, 0.45);
+  }
+
+  25% {
+    box-shadow:
+      0 10px 24px rgba(31, 41, 55, 0.08),
+      0 8px 32px -4px rgba(255, 204, 0, 0.45);
+  }
+
+  50% {
+    box-shadow:
+      0 10px 24px rgba(31, 41, 55, 0.08),
+      0 8px 32px -4px rgba(0, 199, 255, 0.45);
+  }
+
+  75% {
+    box-shadow:
+      0 10px 24px rgba(31, 41, 55, 0.08),
+      0 8px 32px -4px rgba(88, 86, 214, 0.45);
+  }
+
+  100% {
+    box-shadow:
+      0 10px 24px rgba(31, 41, 55, 0.08),
+      0 8px 32px -4px rgba(255, 45, 85, 0.45);
+  }
+}
+
+.macbid-tp-panel-rgb::before {
+  animation: macbid-rgb-rotate 4s linear infinite;
+  background: conic-gradient(
+    from var(--macbid-rgb-angle),
+    #ff2d55,
+    #ffcc00,
+    #34c759,
+    #00c7ff,
+    #5856d6,
+    #ff2d55
+  );
+  border-radius: inherit;
+  content: '';
+  inset: 0;
+  position: absolute;
+  z-index: -2;
+}
+
+.macbid-tp-panel-rgb::after {
+  background: linear-gradient(135deg, #ffffff 0%, #f7fbf0 100%);
+  border-radius: 16px;
+  content: '';
+  inset: 2px;
+  position: absolute;
+  z-index: -1;
+}
+
+.macbid-tp-panel-rgb > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes macbid-rgb-rotate {
+  to { --macbid-rgb-angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .macbid-tp-panel-rgb,
+  .macbid-tp-panel-rgb::before {
+    animation: none;
+  }
+}
+
+.macbid-tp-kicker {
+  color: #6f8f21;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  margin: 0 0 2px;
+  text-transform: uppercase;
+}
+
+.macbid-tp-total {
+  animation: macbid-pop-in 0.22s ease-out;
+  color: #24122f;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0 0 4px;
+}
+
+@keyframes macbid-pop-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-3px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.macbid-tp-total--good { color: #2d7a22; }
+.macbid-tp-total--ok { color: #a65f00; }
+.macbid-tp-total--bad { color: #b91c1c; }
+
+.macbid-tp-note {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 3px 0 0;
+}
+
+.macbid-tp-row {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(31, 41, 55, 0.06);
+  border-radius: 10px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin: 0;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.macbid-tp-row span {
+  color: #4b5563;
+  min-width: 0;
+}
+
+.macbid-tp-row strong {
+  color: #111827;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.macbid-tp-breakdown {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.macbid-tp-breakdown--collapsed {
+  display: none;
+}
+
+.macbid-tp-controls {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.macbid-tp-controls label {
+  align-items: center;
+  color: #374151;
+  display: flex;
+  flex: 1 1 190px;
+  font-weight: 800;
+  gap: 8px;
+}
+
+.macbid-tp-controls input {
+  background: #fff;
+  border: 1px solid rgba(31, 41, 55, 0.18);
+  border-radius: 10px;
+  color: #111827;
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 110px;
+  padding: 8px 10px;
+}
+
+.macbid-tp-controls input:focus {
+  border-color: #7cb02d;
+  box-shadow: 0 0 0 3px rgba(124, 176, 45, 0.16);
+  outline: none;
+}
+
+.macbid-tp-warning {
+  background: #fff7e8;
+  border: 1px solid #f1c36d;
+  border-radius: 10px;
+  color: #6f3b00;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 8px 10px;
+}
+
+.macbid-tp-badge {
+  background: #24122f;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 8px;
+}
+
+.macbid-tp-controls .macbid-tp-badge:empty {
+  display: none;
+}
+
+.macbid-tp-controls .macbid-tp-badge {
+  background: #eef7df;
+  color: #416400;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+@media (max-width: 680px) {
+  .macbid-tp-breakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .macbid-tp-total {
+    font-size: 30px;
+  }
+}
+
+/* Savings bar */
+.macbid-tp-savings-bar {
+  background: rgba(31, 41, 55, 0.08);
+  border-radius: 999px;
+  height: 6px;
+  margin: 6px 0 4px;
+  overflow: hidden;
+}
+
+.macbid-tp-savings-fill {
+  background: #7cb02d;
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.macbid-tp-savings-fill--good { background: #22c55e; }
+.macbid-tp-savings-fill--ok { background: #d97706; }
+.macbid-tp-savings-fill--bad { background: #dc2626; }
+
+/* Listing badges — absolute corner overlay */
+.macbid-tp-badge--listing {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 10;
+}
+
+/* Deal quality colours for badges */
+.macbid-tp-badge--good { background: #15803d; color: #f0fdf4; }
+.macbid-tp-badge--ok { background: #b45309; color: #fffbeb; }
+.macbid-tp-badge--bad { background: #b91c1c; color: #fef2f2; }
+
+/* Breakdown toggle */
+.macbid-tp-breakdown-toggle {
+  background: none;
+  border: none;
+  border-top: 1px solid rgba(124, 176, 45, 0.22);
+  color: #6f8f21;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 12px;
+  padding: 8px 0 2px;
+  text-align: left;
+  text-transform: uppercase;
+  width: 100%;
+}
+
+.macbid-tp-breakdown-toggle:hover { color: #24122f; }
+
+/* Budget fits / over-budget badge variants */
+.macbid-tp-badge--fits-budget {
+  background: #eef7df;
+  color: #416400;
+}
+
+.macbid-tp-badge--over-budget {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Warning waiting state */
+@keyframes macbid-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.macbid-tp-warning--waiting {
+  animation: macbid-pulse 2s ease-in-out infinite;
+}
+
+/* ── Dark mode ─────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  .macbid-tp-panel {
+    background: linear-gradient(135deg, #1e1a2e 0%, #151f0f 100%);
+    border-color: rgba(124, 176, 45, 0.35);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    color: #e5e7eb;
+  }
+
+  .macbid-tp-panel-rgb::after {
+    background: linear-gradient(135deg, #1e1a2e 0%, #151f0f 100%);
+  }
+
+  .macbid-tp-kicker { color: #a3c74f; }
+
+  .macbid-tp-total { color: #f3f4f6; }
+  .macbid-tp-total--good { color: #4ade80; }
+  .macbid-tp-total--ok { color: #fbbf24; }
+  .macbid-tp-total--bad { color: #f87171; }
+
+  .macbid-tp-note { color: #9ca3af; }
+
+  .macbid-tp-savings-bar { background: rgba(255, 255, 255, 0.1); }
+
+  .macbid-tp-row {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.07);
+  }
+
+  .macbid-tp-row span { color: #9ca3af; }
+  .macbid-tp-row strong { color: #f9fafb; }
+
+  .macbid-tp-breakdown-toggle {
+    border-top-color: rgba(124, 176, 45, 0.3);
+    color: #a3c74f;
+  }
+
+  .macbid-tp-breakdown-toggle:hover { color: #f3f4f6; }
+
+  .macbid-tp-controls label { color: #d1d5db; }
+
+  .macbid-tp-controls input {
+    background: #2d2438;
+    border-color: rgba(255, 255, 255, 0.14);
+    color: #f3f4f6;
+  }
+
+  .macbid-tp-controls input:focus {
+    border-color: #7cb02d;
+    box-shadow: 0 0 0 3px rgba(124, 176, 45, 0.2);
+  }
+
+  .macbid-tp-warning {
+    background: #2a1f00;
+    border-color: #78520a;
+    color: #fde68a;
+  }
+
+  .macbid-tp-badge {
+    background: #3d2a52;
+    color: #e9d5ff;
+  }
+
+  .macbid-tp-controls .macbid-tp-badge {
+    background: #1a2d0a;
+    color: #a3c74f;
+  }
+
+  .macbid-tp-badge--fits-budget { background: #0f2d1a; color: #4ade80; }
+  .macbid-tp-badge--over-budget { background: #2d0a0a; color: #f87171; }
+
+  .macbid-tp-badge--good { background: #14532d; color: #bbf7d0; }
+  .macbid-tp-badge--ok { background: #451a03; color: #fde68a; }
+  .macbid-tp-badge--bad { background: #450a0a; color: #fecaca; }
+}

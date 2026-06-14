@@ -52,12 +52,12 @@ The app calls mac.bid's public search API directly from your browser. If mac.bid
 
 ## Chrome extension development
 
-This repo also contains an unpacked Chrome extension in `extension/`.
+This repo also contains an unpacked Chrome extension in `macbid extension/`.
 
 1. Open Chrome and go to `chrome://extensions`.
 2. Enable **Developer mode**.
 3. Click **Load unpacked**.
-4. Select the `extension/` folder.
+4. Select the `macbid extension/` folder.
 5. Visit a MAC.BID item page and confirm the estimated total panel appears.
 
 Run focused shared-logic tests with `npm test`.
