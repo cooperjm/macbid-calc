@@ -188,7 +188,7 @@
 
 .macbid-tp-controls label {
   align-items: center;
-  color: #b7bcc7 !important;
+  color: #4b5563 !important;
   display: flex;
   flex: 1 1 190px;
   font-weight: 800;
@@ -368,7 +368,7 @@
 
   .macbid-tp-breakdown-toggle:hover { color: #f3f4f6; }
 
-  .macbid-tp-controls label { color: #d1d5db; }
+  .macbid-tp-controls label { color: #d1d5db !important; }
 
   .macbid-tp-controls input {
     background: #2d2438;
