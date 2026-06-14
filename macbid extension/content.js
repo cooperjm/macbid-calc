@@ -217,15 +217,21 @@
     // On pages like all-deals a backdrop overlays the list, so elementFromPoint
     // at a list button's center returns the backdrop, not the button itself.
     // The modal's BID NOW button is genuinely on top and passes this check.
-    const clickable = candidates.find((el) => {
-      const rect = el.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) return false;
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const top = document.elementFromPoint(cx, cy);
-      return top !== null && (top === el || el.contains(top));
-    });
-    if (clickable) return clickable;
+    // Skip on single-product pages (URL matches ITEM_PATH_PATTERN): scroll position
+    // makes this check unreliable there — when the main product's button is above
+    // the viewport and similar-item buttons are in view, elementFromPoint picks the
+    // wrong one. On product pages, document order (candidates[0]) is correct.
+    if (!ITEM_PATH_PATTERN.test(root.location.pathname)) {
+      const clickable = candidates.find((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return false;
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const top = document.elementFromPoint(cx, cy);
+        return top !== null && (top === el || el.contains(top));
+      });
+      if (clickable) return clickable;
+    }
 
     // Priority 3: parent directly contains a countdown timer.
     const withCountdownParent = candidates.find(
@@ -243,23 +249,23 @@
       return null;
     }
 
-    // On watchlist/modal pages the countdown timer lives in a different DOM branch
-    // from "set your max bid", so the walk below never matches. Use the closest
-    // dialog/modal ancestor first — it contains the full item detail including prices.
+    // Locate the nearest modal/dialog boundary so the walk below stops before it
+    // reaches the full modal. The modal contains a "Similar Products" slider whose
+    // lot-card price elements must not be mistaken for the main product's price.
     const dialog = bidNow.closest('[role="dialog"], [aria-modal="true"]');
-    if (dialog) {
-      return dialog;
-    }
-
-    // Cover non-ARIA modals using common class name patterns.
     const classModal = bidNow.closest('[class*="modal"], [class*="overlay"], [class*="dialog"]');
-    if (classModal && classModal !== document.body && classModal !== document.documentElement) {
-      return classModal;
-    }
+    const nearestModal = dialog
+      || (classModal && classModal !== document.body && classModal !== document.documentElement
+        ? classModal
+        : null);
 
+    // Walk up from BID NOW to find the tightest container that has both
+    // "Set your max bid" text and a countdown timer. Bounded by the modal
+    // root so we never return the entire modal (which includes similar items).
     let current = bidNow;
+    const walkLimit = nearestModal || document.body;
 
-    while (current && current !== document.body) {
+    while (current && current !== walkLimit && current !== document.body) {
       const text = getText(current);
 
       if (
@@ -270,6 +276,11 @@
       }
 
       current = current.parentElement;
+    }
+
+    // Fall back to the modal/dialog if no tighter bid-area container was found.
+    if (nearestModal) {
+      return nearestModal;
     }
 
     // Find the nearest common ancestor of the BID NOW button and any visible
