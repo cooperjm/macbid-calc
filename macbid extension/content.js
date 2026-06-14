@@ -521,6 +521,31 @@
     }
   }
 
+  function isEditingBudgetInput() {
+    const activeElement = document.activeElement;
+
+    return Boolean(
+      activeElement
+        && activeElement.dataset
+        && activeElement.dataset.macbidBudgetInput === 'true',
+    );
+  }
+
+  function syncBudgetControls(panel, effectiveSettings, currentTotal) {
+    const controls = panel.querySelector('.macbid-tp-controls');
+    const input = controls && controls.querySelector('[data-macbid-budget-input="true"]');
+
+    if (!controls) {
+      return;
+    }
+
+    if (input && document.activeElement !== input) {
+      input.value = settings.budget === null || settings.budget === undefined ? '' : String(settings.budget);
+    }
+
+    updateBudgetResult(controls, effectiveSettings, currentTotal);
+  }
+
   function createBudgetControls(effectiveSettings, currentTotal) {
     const controls = createElement('div', 'macbid-tp-controls');
     const label = createElement('label', '', 'Budget ');
@@ -532,6 +557,7 @@
     input.step = '0.01';
     input.placeholder = '0.00';
     input.value = settings.budget === null || settings.budget === undefined ? '' : String(settings.budget);
+    input.dataset.macbidBudgetInput = 'true';
     input.setAttribute('aria-label', 'Budget');
     result.dataset.macbidBudgetResult = 'true';
 
@@ -703,13 +729,13 @@
       overhead: total.overhead,
       retailPrice: snapshot.retailPrice,
       taxLabel: taxSelection.label,
-      budget: settings.budget,
       rgb: settings.rgbGlowEnabled,
       quality,
     });
     const existingPanel = overlayRoot.firstElementChild;
 
     if (existingPanel && existingPanel.dataset.macbidSig === signature) {
+      syncBudgetControls(existingPanel, effectiveSettings, total.total);
       return;
     }
 
@@ -845,7 +871,13 @@
         return;
       }
 
+      const change = changes[STORAGE_KEY];
       settings = normalizeStoredSettings(changes[STORAGE_KEY].newValue);
+
+      if (isEditingBudgetInput() && fees.isBudgetOnlySettingsChange(change.oldValue, change.newValue)) {
+        return;
+      }
+
       scheduleRender();
     });
   }

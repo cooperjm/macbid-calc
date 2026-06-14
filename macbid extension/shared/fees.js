@@ -86,6 +86,26 @@
     return normalized;
   }
 
+  function isBudgetOnlySettingsChange(oldSettings, newSettings) {
+    const before = normalizeSettings(oldSettings);
+    const after = normalizeSettings(newSettings);
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+    if (Object.is(before.budget, after.budget)) {
+      return false;
+    }
+
+    keys.delete('budget');
+
+    for (const key of keys) {
+      if (!Object.is(before[key], after[key])) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   function getTaxRate(settings, normalized) {
     if (Object.prototype.hasOwnProperty.call(settings, 'taxRate')) {
       return normalized.taxRate;
@@ -148,6 +168,7 @@
   const api = {
     DEFAULT_SETTINGS,
     calculateTotal,
+    isBudgetOnlySettingsChange,
     maxBidFromBudget,
     normalizeSettings,
     roundCurrency,

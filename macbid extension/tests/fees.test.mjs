@@ -101,3 +101,29 @@ test('normalizeSettings stores the optional RGB glow setting', () => {
   assert.equal(fees.normalizeSettings({ rgbGlowEnabled: true }).rgbGlowEnabled, true);
   assert.equal(fees.normalizeSettings({ rgbGlowEnabled: false }).rgbGlowEnabled, false);
 });
+
+test('isBudgetOnlySettingsChange detects storage changes limited to budget', () => {
+  const before = fees.normalizeSettings({
+    premiumRate: 0.15,
+    lotFee: 3,
+    assuranceEnabled: false,
+    assuranceFee: 7,
+    customTaxEnabled: false,
+    customTaxRate: null,
+    budget: '3',
+    rgbGlowEnabled: false,
+  });
+
+  assert.equal(
+    fees.isBudgetOnlySettingsChange(before, { ...before, budget: '30' }),
+    true,
+  );
+  assert.equal(
+    fees.isBudgetOnlySettingsChange(before, { ...before, budget: '30', rgbGlowEnabled: true }),
+    false,
+  );
+  assert.equal(
+    fees.isBudgetOnlySettingsChange(before, { ...before }),
+    false,
+  );
+});
