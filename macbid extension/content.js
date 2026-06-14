@@ -5,7 +5,10 @@
   const STORAGE_KEY = 'macbidTruePriceSettings';
   const ITEM_PATH_PATTERN = /\/(?:auction|lot|product|item)(?:\/|$|[-_])/i;
   const BID_LABEL_PATTERN = /\b(?:current|high)\s+bid\b/i;
-  const DOLLAR_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9A-Za-z,.])/g;
+  // Negative lookahead excludes digits and commas only — NOT letters — so that
+  // flex-container innerText like "$3,262.37LIKE" (price adjacent to a "LIKE NEW"
+  // badge with no whitespace separator) still parses correctly on mac.bid.
+  const DOLLAR_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9,.])/g;
   const DEBOUNCE_MS = 150;
 
   const fees = root.MacbidFees;
@@ -187,8 +190,50 @@
   }
 
   function findBidNowElement() {
-    return Array.from(document.querySelectorAll('button, a, [role="button"]'))
-      .find((element) => isElementVisible(element) && /\bbid\s+now\b/i.test(getText(element)));
+    const candidates = Array.from(document.querySelectorAll('button, a, [role="button"]'))
+      .filter((element) => isElementVisible(element) && /\bbid\s+now\b/i.test(getText(element)));
+
+    if (candidates.length === 1) return candidates[0];
+
+    // On pages with multiple BID NOW buttons (watchlist, all-deals, etc.) prefer
+    // the one that belongs to the active detail card rather than a list-row button.
+
+    // Priority 1: inside a "Set your max bid" container (watchlist / full detail view).
+    const withBidSelector = candidates.find((el) => {
+      let ancestor = el.parentElement;
+      let depth = 0;
+      while (ancestor && depth < 6) {
+        if (/\bset\s+your\s+max\s+bid\b/i.test(getText(ancestor))) {
+          return true;
+        }
+        ancestor = ancestor.parentElement;
+        depth += 1;
+      }
+      return false;
+    });
+    if (withBidSelector) return withBidSelector;
+
+    // Priority 2: actually on top — not covered by a modal backdrop.
+    // On pages like all-deals a backdrop overlays the list, so elementFromPoint
+    // at a list button's center returns the backdrop, not the button itself.
+    // The modal's BID NOW button is genuinely on top and passes this check.
+    const clickable = candidates.find((el) => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return false;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const top = document.elementFromPoint(cx, cy);
+      return top !== null && (top === el || el.contains(top));
+    });
+    if (clickable) return clickable;
+
+    // Priority 3: parent directly contains a countdown timer.
+    const withCountdownParent = candidates.find(
+      (el) => el.parentElement && el.parentElement.querySelector('.lot-countdown-timer'),
+    );
+    if (withCountdownParent) return withCountdownParent;
+
+    return candidates[0] || null;
   }
 
   function findDetailBidCard() {
@@ -196,6 +241,20 @@
 
     if (!bidNow) {
       return null;
+    }
+
+    // On watchlist/modal pages the countdown timer lives in a different DOM branch
+    // from "set your max bid", so the walk below never matches. Use the closest
+    // dialog/modal ancestor first — it contains the full item detail including prices.
+    const dialog = bidNow.closest('[role="dialog"], [aria-modal="true"]');
+    if (dialog) {
+      return dialog;
+    }
+
+    // Cover non-ARIA modals using common class name patterns.
+    const classModal = bidNow.closest('[class*="modal"], [class*="overlay"], [class*="dialog"]');
+    if (classModal && classModal !== document.body && classModal !== document.documentElement) {
+      return classModal;
     }
 
     let current = bidNow;
@@ -211,6 +270,21 @@
       }
 
       current = current.parentElement;
+    }
+
+    // Find the nearest common ancestor of the BID NOW button and any visible
+    // countdown timer — handles layouts where the two elements share a container
+    // but no ARIA role or modal class identifies it.
+    const visibleCountdown = Array.from(document.querySelectorAll('.lot-countdown-timer'))
+      .find(isElementVisible);
+    if (visibleCountdown) {
+      let ancestor = bidNow;
+      while (ancestor && ancestor !== document.body) {
+        if (ancestor.contains(visibleCountdown)) {
+          return ancestor;
+        }
+        ancestor = ancestor.parentElement;
+      }
     }
 
     return bidNow.parentElement || bidNow;
@@ -290,13 +364,21 @@
 
     const baseSnapshot = parser.parseSnapshotFromDocument(document);
     const assurance = getAssuranceState(container);
-    const retailPrice = baseSnapshot.retailPrice
-      || amounts.slice(1).find((amount) => amount > amounts[0])
-      || null;
+
+    // Prefer specific price elements when present; fall back to positional text parsing.
+    const priceElBid = extractCardPrice(container, 'price-current');
+    const currentBid = priceElBid !== undefined ? priceElBid : amounts[0];
+
+    // Search within the container first — on watchlist pages, baseSnapshot.retailPrice
+    // may be taken from a different item visible elsewhere in the document.
+    const retailPrice = extractCardPrice(container, 'price-retail')
+      ?? amounts.slice(1).find((amount) => amount > (currentBid ?? amounts[0]))
+      ?? baseSnapshot.retailPrice
+      ?? null;
 
     return {
       ...baseSnapshot,
-      currentBid: amounts[0],
+      currentBid,
       retailPrice,
       assuranceFee: assurance.fee,
       assuranceSelected: assurance.selected,
@@ -310,11 +392,17 @@
       return null;
     }
 
-    return findBidLabelTarget()
-      || (snapshot && snapshot.detailInsertionTarget)
-      || (snapshot && snapshot.detailContainer)
-      || document.body.firstElementChild
-      || document.body;
+    // When the detail card has been identified, use its injection target directly.
+    // findBidLabelTarget() may match unrelated bid labels elsewhere on the page
+    // (e.g. an Algolia search facet labelled "Current Bid" on the all-deals page).
+    if (snapshot && snapshot.detailInsertionTarget) {
+      return snapshot.detailInsertionTarget;
+    }
+    if (snapshot && snapshot.detailContainer) {
+      return snapshot.detailContainer;
+    }
+
+    return findBidLabelTarget() || document.body.firstElementChild || document.body;
   }
 
   function getOrCreateRoot() {
