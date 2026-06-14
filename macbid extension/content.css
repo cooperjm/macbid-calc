@@ -188,7 +188,7 @@
 
 .macbid-tp-controls label {
   align-items: center;
-  color: #374151;
+  color: #b7bcc7 !important;
   display: flex;
   flex: 1 1 190px;
   font-weight: 800;
@@ -279,7 +279,7 @@
 .macbid-tp-badge--listing {
   position: absolute;
   right: 8px;
-  top: 8px;
+  bottom: 25px;
   z-index: 10;
 }
 
