@@ -14,3 +14,24 @@ test('budget changes update existing controls without forcing panel replacement'
   assert.match(contentJs, /function syncBudgetControls/);
   assert.match(contentJs, /syncBudgetControls\(existingPanel, effectiveSettings, total\.total\);\s+return;/);
 });
+
+test('dollar pattern loses an amount glued to following digits, and separation restores it', () => {
+  const literal = contentJs.match(/const DOLLAR_PATTERN = \/(.+)\/([a-z]*);/);
+  assert.ok(literal, 'DOLLAR_PATTERN literal should be present');
+
+  const scan = (text) => Array.from(text.matchAll(new RegExp(literal[1], literal[2])))
+    .map((match) => Number(match[1].replace(/,/g, '')));
+
+  // Real detail-card text: the retail price runs straight into the countdown.
+  assert.deepEqual(scan('$165-93%$2399.000Days21Hours13Mins20Sec'), [165]);
+  // Separating text nodes keeps the retail price parseable.
+  assert.deepEqual(scan('$165\n-93%\n$2399.00\n0\nDays\n21\nHours'), [165, 2399]);
+});
+
+test('detail price text separates text nodes so adjacent numbers do not merge', () => {
+  const block = contentJs.match(/function getDetailPriceText\(card\) \{([\s\S]*?)\n  \}/);
+
+  assert.ok(block, 'getDetailPriceText should be present');
+  assert.match(block[1], /createTreeWalker/);
+  assert.doesNotMatch(block[1], /return getText\(clone\)/);
+});

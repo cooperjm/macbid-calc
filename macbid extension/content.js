@@ -37,6 +37,58 @@
   let productBudget = '';
   let productKey = null;
 
+  // Debug instrumentation. Enable from the page console with:
+  //   localStorage.setItem('macbidDebug', '1')
+  // Each script instance gets its own id, so duplicate injections are visible.
+  const INSTANCE_ID = Math.random().toString(36).slice(2, 7);
+  let lastMutationTrigger = '(initial render)';
+
+  function isDebugEnabled() {
+    try {
+      return Boolean(root.localStorage) && root.localStorage.getItem('macbidDebug') === '1';
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function debugLog() {
+    if (!isDebugEnabled()) {
+      return;
+    }
+
+    const args = Array.prototype.slice.call(arguments);
+    console.log.apply(console, ['[macbid ' + INSTANCE_ID + ']'].concat(args));
+  }
+
+  function describeMutation(mutation) {
+    const target = mutation.target;
+    const name = target && target.nodeName ? target.nodeName : '?';
+    const cls = target && typeof target.className === 'string' ? target.className.slice(0, 40) : '';
+    return mutation.type + ' on <' + name + (cls ? ' class=\"' + cls + '\"' : '') + '>';
+  }
+
+  function describeSignatureChange(previous, next) {
+    if (!previous) {
+      return 'NO EXISTING PANEL (root was empty)';
+    }
+
+    let before;
+    let after;
+
+    try {
+      before = JSON.parse(previous);
+      after = JSON.parse(next);
+    } catch (error) {
+      return 'unparseable signature';
+    }
+
+    const changed = Object.keys(after)
+      .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+      .map((key) => key + ': ' + JSON.stringify(before[key]) + ' -> ' + JSON.stringify(after[key]));
+
+    return changed.length ? changed.join(' , ') : 'SIGNATURE IDENTICAL (replaced anyway)';
+  }
+
   function hasChromeStorage() {
     return Boolean(
       root.chrome
@@ -437,7 +489,26 @@
   function getDetailPriceText(card) {
     const clone = card.cloneNode(true);
     clone.querySelectorAll('select, option, button, input, .macbid-tp-panel, .macbid-tp-badge').forEach((node) => node.remove());
-    return getText(clone);
+
+    // A detached clone has no layout, so innerText collapses to textContent and the
+    // whitespace between elements is lost. That glues the retail price onto the
+    // countdown ("$2399.00" + "0Days21Hours"), and DOLLAR_PATTERN then rejects the
+    // amount because digits follow it. Join text nodes so neighbours stay separate.
+    const walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT);
+    const parts = [];
+    let textNode = walker.nextNode();
+
+    while (textNode) {
+      const value = textNode.nodeValue.trim();
+
+      if (value) {
+        parts.push(value);
+      }
+
+      textNode = walker.nextNode();
+    }
+
+    return parts.join('\n');
   }
 
   function getAssuranceState(card) {
@@ -871,6 +942,13 @@
       return;
     }
 
+    debugLog(
+      'rebuild:',
+      describeSignatureChange(existingPanel && existingPanel.dataset.macbidSig, signature),
+      '| trigger:',
+      lastMutationTrigger,
+    );
+
     const panel = createElement('div', 'macbid-tp-panel');
     const taxNote = `${taxSelection.label}: ${formatPercent(taxSelection.rate)} estimate. Local taxes may vary.`;
     const breakdown = createElement('div', 'macbid-tp-breakdown');
@@ -990,6 +1068,11 @@
         return;
       }
 
+      if (isDebugEnabled()) {
+        const trigger = mutations.find((mutation) => !isOverlayMutation(mutation));
+        lastMutationTrigger = trigger ? describeMutation(trigger) : '(none)';
+      }
+
       scheduleRender();
     });
 
@@ -1032,6 +1115,8 @@
       observer = null;
     }
   }
+
+  debugLog('content script instance loaded at', root.location.href);
 
   loadSettings((storedSettings) => {
     settings = storedSettings;
