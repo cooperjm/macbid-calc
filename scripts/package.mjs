@@ -15,9 +15,8 @@ import { deflateRawSync, crc32 } from 'node:zlib';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const source = join(root, 'extension');
 
-// Development-only files that must not ship to the store.
+// Development-only directories that must not ship to the store.
 const EXCLUDED_DIRS = new Set(['tests']);
-const EXCLUDED_FILES = new Set(['icon.svg']);
 
 // Fixed DOS timestamp (1980-01-01) so repeated builds are byte-identical.
 const DOS_TIME = 0;
@@ -34,7 +33,7 @@ function collect(dir, prefix = '') {
       if (!EXCLUDED_DIRS.has(name)) {
         found.push(...collect(full, relative));
       }
-    } else if (!EXCLUDED_FILES.has(relative)) {
+    } else {
       found.push({ name: relative, full });
     }
   }

@@ -49,7 +49,7 @@ Runs the shared fee, tax and parser suites on Node's built-in test runner. No de
 npm run package
 ```
 
-Writes `macbid-true-price-<version>.zip` at the repo root, containing only the runtime files — tests and unreferenced artwork are excluded, and archive paths use forward slashes so the `shared/` folder survives unpacking. Bump `version` in `extension/manifest.json` first; the store rejects an upload that isn't newer than the published one.
+Writes `macbid-true-price-<version>.zip` at the repo root, containing only the runtime files — the `tests/` folder is excluded, and archive paths use forward slashes so the `shared/` folder survives unpacking. Bump `version` in `extension/manifest.json` first; the store rejects an upload that isn't newer than the published one.
 
 The listing also needs a privacy policy URL, which is what `privacy.html` is for — host it (GitHub Pages works) and paste the URL into the dashboard.
 
