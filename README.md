@@ -25,6 +25,8 @@ Adds an estimated-total panel to lot pages, showing the all-in price, what perce
 
 Premium rate, lot fee, a custom tax rate and the RGB panel glow are configurable on the options page. Buyer's Assurance is not — it follows the checkbox on the lot page itself.
 
+Everything runs locally in your browser. The extension makes no network requests and collects nothing; the only permission it declares is `storage`, for your settings and per-lot budgets.
+
 ### Install from source
 
 1. Open `chrome://extensions` and enable **Developer mode**.
