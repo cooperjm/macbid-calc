@@ -19,6 +19,7 @@
         "shared/fees.js",
         "shared/taxes.js",
         "shared/parser.js",
+        "shared/endtime.js",
         "content.js"
       ],
       "run_at": "document_idle"
