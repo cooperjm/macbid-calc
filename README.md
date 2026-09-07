@@ -81,7 +81,7 @@ Refresh, and every panel rebuild logs which fields changed, which DOM mutation t
 
 **Settings → Pages → Source: Deploy from a branch → Branch: `main` / root → Save**
 
-The site goes live at `https://<your-username>.github.io/macbid-calc/` after a minute. The app must be served from the repo **root** — `index.html`, `manifest.json`, `icon.svg` and `privacy.html` stay there for that reason.
+The site goes live at `https://<your-username>.github.io/macbid-calc/` after a minute. The app must be served from the repo **root** — `index.html`, `manifest.json` and `privacy.html` stay there for that reason.
 
 On a phone, open the URL and use **Add to Home Screen** to install it like a native app.
 
@@ -108,11 +108,10 @@ The app calls mac.bid's public search API straight from the browser. If mac.bid 
 | `scripts/package.mjs` | Builds the Chrome Web Store zip |
 | `index.html` | The standalone web calculator |
 | `manifest.json` | **PWA** manifest for the web app — not the extension's, which lives in `extension/` |
-| `icon.svg` | Web app icon |
 | `privacy.html` | Privacy policy, required for the Web Store listing |
 | `worker.js` | Optional Cloudflare Worker CORS proxy |
 | `docs/` | Design spec and implementation plan |
-| `assets/` | Screenshot and source artwork |
+| `assets/` | Screenshot, app icons (`icon-192`/`icon-512` for the PWA, `icon-180` for iOS) and source artwork |
 
 ## Notes
 
