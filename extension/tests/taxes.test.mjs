@@ -174,3 +174,35 @@ test('selectTimeZone returns null without a usable location', () => {
   assert.equal(taxes.selectTimeZone({}), null);
   assert.equal(taxes.selectTimeZone({ locationName: '', stateCode: 'ZZ' }), null);
 });
+
+test('selectTaxRate finds the warehouse inside a full street address', () => {
+  // What the live page actually yields: the parser returns the address line, and
+  // the warehouse name sits mid-string between the street and the state.
+  const result = taxes.selectTaxRate({
+    settings: {},
+    locationName: '1335 Isley Drive, Gastonia, NC 28052',
+    stateCode: 'NC',
+  });
+
+  assert.equal(result.rate, 0.07);
+  assert.equal(result.kind, 'warehouse');
+  assert.equal(result.source, 'Gastonia');
+});
+
+test('selectTaxRate still rejects a different city sharing a warehouse word', () => {
+  // North Canton is not Canton, and the comma segment keeps them apart.
+  const result = taxes.selectTaxRate({
+    settings: {},
+    locationName: '4500 Everhard Rd NW, North Canton, OH 44718',
+    stateCode: 'OH',
+  });
+
+  assert.equal(result.kind, 'state');
+});
+
+test('selectTimeZone resolves the warehouse from a full street address', () => {
+  assert.equal(
+    taxes.selectTimeZone({ locationName: '7100 Gateway Blvd, El Paso, TX 79915', stateCode: 'TX' }),
+    'America/Denver',
+  );
+});

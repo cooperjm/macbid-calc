@@ -189,6 +189,19 @@
     return normalized === '' ? [] : normalized.split(/[^a-z0-9]+/).filter(Boolean);
   }
 
+  // A real pick-up location arrives as a full address - "1335 Isley Drive,
+  // Gastonia, NC 28052" - with the warehouse name mid-string. Matching across the
+  // whole token stream would reject it, because the street tokens are neither
+  // context words nor state tokens. Match a segment at a time instead, which also
+  // keeps "North Canton" from matching the Canton warehouse: they share a segment.
+  function splitLocationSegments(value) {
+    if (typeof value !== "string") {
+      return [];
+    }
+
+    return value.split(/[,\n;]+/).map((segment) => segment.trim()).filter(Boolean);
+  }
+
   function normalizeRate(value) {
     if (value === null || value === undefined) {
       return null;
@@ -255,17 +268,26 @@
   }
 
   function findWarehouseEntry(locationName, stateCode) {
-    const locationTokens = tokenizeLocation(locationName);
+    const segments = splitLocationSegments(locationName);
 
-    if (locationTokens.length === 0) {
+    if (segments.length === 0) {
       return null;
     }
 
     const normalizedState = normalizeStateCode(stateCode);
 
     return WAREHOUSE_RATES.find((warehouse) => {
-      const stateMatches = !normalizedState || warehouse.stateCode === normalizedState;
-      return stateMatches && hasWarehouseTokenMatch(locationTokens, tokenizeLocation(warehouse.name), warehouse.stateCode);
+      if (normalizedState && warehouse.stateCode !== normalizedState) {
+        return false;
+      }
+
+      const warehouseTokens = tokenizeLocation(warehouse.name);
+
+      return segments.some((segment) => hasWarehouseTokenMatch(
+        tokenizeLocation(segment),
+        warehouseTokens,
+        warehouse.stateCode,
+      ));
     }) || null;
   }
 
