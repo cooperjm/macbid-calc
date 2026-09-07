@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "node --test \"macbid extension/tests/*.test.mjs\""
+    "test": "node --test \"extension/tests/*.test.mjs\"",
+    "package": "node scripts/package.mjs"
   }
 }
