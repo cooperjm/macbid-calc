@@ -152,3 +152,25 @@ test('selectTaxRate returns unknown when state and location are unknown', () => 
   assert.equal(result.source, 'Tax unknown');
   assert.equal(result.kind, 'unknown');
 });
+
+test('selectTimeZone uses the warehouse table first', () => {
+  assert.equal(taxes.selectTimeZone({ locationName: 'Gastonia', stateCode: 'NC' }), 'America/New_York');
+});
+
+test('selectTimeZone puts El Paso on Mountain time, not Central', () => {
+  assert.equal(taxes.selectTimeZone({ locationName: 'El Paso', stateCode: 'TX' }), 'America/Denver');
+});
+
+test('selectTimeZone falls back to the state for an unknown warehouse in a single-zone state', () => {
+  assert.equal(taxes.selectTimeZone({ locationName: 'Charlotte Depot', stateCode: 'NC' }), 'America/New_York');
+});
+
+test('selectTimeZone refuses to guess in a multi-zone state', () => {
+  assert.equal(taxes.selectTimeZone({ locationName: 'Dallas Depot', stateCode: 'TX' }), null);
+  assert.equal(taxes.selectTimeZone({ locationName: 'Miami Depot', stateCode: 'FL' }), null);
+});
+
+test('selectTimeZone returns null without a usable location', () => {
+  assert.equal(taxes.selectTimeZone({}), null);
+  assert.equal(taxes.selectTimeZone({ locationName: '', stateCode: 'ZZ' }), null);
+});

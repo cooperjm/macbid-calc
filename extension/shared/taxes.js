@@ -117,17 +117,36 @@
   });
 
   const WAREHOUSE_RATES = Object.freeze([
-    { name: 'Pittsburgh Mills', stateCode: 'PA', rate: 0.07 },
-    { name: 'Monroeville', stateCode: 'PA', rate: 0.07 },
-    { name: 'Robinson', stateCode: 'PA', rate: 0.07 },
-    { name: 'Beaver Falls', stateCode: 'PA', rate: 0.06 },
-    { name: 'Akron', stateCode: 'OH', rate: 0.0675 },
-    { name: 'Canton', stateCode: 'OH', rate: 0.065 },
-    { name: 'Rock Hill', stateCode: 'SC', rate: 0.07 },
-    { name: 'Spartanburg', stateCode: 'SC', rate: 0.07 },
-    { name: 'Gastonia', stateCode: 'NC', rate: 0.07 },
-    { name: 'El Paso', stateCode: 'TX', rate: 0.0825 },
+    { name: 'Pittsburgh Mills', stateCode: 'PA', rate: 0.07, timeZone: 'America/New_York' },
+    { name: 'Monroeville', stateCode: 'PA', rate: 0.07, timeZone: 'America/New_York' },
+    { name: 'Robinson', stateCode: 'PA', rate: 0.07, timeZone: 'America/New_York' },
+    { name: 'Beaver Falls', stateCode: 'PA', rate: 0.06, timeZone: 'America/New_York' },
+    { name: 'Akron', stateCode: 'OH', rate: 0.0675, timeZone: 'America/New_York' },
+    { name: 'Canton', stateCode: 'OH', rate: 0.065, timeZone: 'America/New_York' },
+    { name: 'Rock Hill', stateCode: 'SC', rate: 0.07, timeZone: 'America/New_York' },
+    { name: 'Spartanburg', stateCode: 'SC', rate: 0.07, timeZone: 'America/New_York' },
+    { name: 'Gastonia', stateCode: 'NC', rate: 0.07, timeZone: 'America/New_York' },
+    // El Paso is the one warehouse not on its state's dominant clock.
+    { name: 'El Paso', stateCode: 'TX', rate: 0.0825, timeZone: 'America/Denver' },
   ]);
+
+  // Single-zone states only. AK, FL, ID, IN, KS, KY, MI, NE, NV, ND, OR, SD, TN
+  // and TX span two zones and are omitted on purpose - see selectTimeZone.
+  const STATE_TIME_ZONES = Object.freeze({
+    AL: 'America/Chicago', AR: 'America/Chicago', AZ: 'America/Phoenix',
+    CA: 'America/Los_Angeles', CO: 'America/Denver', CT: 'America/New_York',
+    DC: 'America/New_York', DE: 'America/New_York', GA: 'America/New_York',
+    HI: 'Pacific/Honolulu', IA: 'America/Chicago', IL: 'America/Chicago',
+    LA: 'America/Chicago', MA: 'America/New_York', MD: 'America/New_York',
+    ME: 'America/New_York', MN: 'America/Chicago', MO: 'America/Chicago',
+    MS: 'America/Chicago', MT: 'America/Denver', NC: 'America/New_York',
+    NH: 'America/New_York', NJ: 'America/New_York', NM: 'America/Denver',
+    NY: 'America/New_York', OH: 'America/New_York', OK: 'America/Chicago',
+    PA: 'America/New_York', RI: 'America/New_York', SC: 'America/New_York',
+    UT: 'America/Denver', VA: 'America/New_York', VT: 'America/New_York',
+    WA: 'America/Los_Angeles', WI: 'America/Chicago', WV: 'America/New_York',
+    WY: 'America/Denver',
+  });
 
   const WAREHOUSE_CONTEXT_WORDS = Object.freeze([
     'location',
@@ -235,7 +254,7 @@
     return false;
   }
 
-  function findWarehouseRate(locationName, stateCode) {
+  function findWarehouseEntry(locationName, stateCode) {
     const locationTokens = tokenizeLocation(locationName);
 
     if (locationTokens.length === 0) {
@@ -243,10 +262,15 @@
     }
 
     const normalizedState = normalizeStateCode(stateCode);
-    const match = WAREHOUSE_RATES.find((warehouse) => {
+
+    return WAREHOUSE_RATES.find((warehouse) => {
       const stateMatches = !normalizedState || warehouse.stateCode === normalizedState;
       return stateMatches && hasWarehouseTokenMatch(locationTokens, tokenizeLocation(warehouse.name), warehouse.stateCode);
-    });
+    }) || null;
+  }
+
+  function findWarehouseRate(locationName, stateCode) {
+    const match = findWarehouseEntry(locationName, stateCode);
 
     if (!match) {
       return null;
@@ -304,13 +328,31 @@
     };
   }
 
+  function selectTimeZone({ locationName, stateCode } = {}) {
+    const warehouse = findWarehouseEntry(locationName, stateCode);
+
+    if (warehouse && warehouse.timeZone) {
+      return warehouse.timeZone;
+    }
+
+    const normalizedState = normalizeStateCode(stateCode);
+
+    if (normalizedState && Object.prototype.hasOwnProperty.call(STATE_TIME_ZONES, normalizedState)) {
+      return STATE_TIME_ZONES[normalizedState];
+    }
+
+    return null;
+  }
+
   const api = {
     STATE_NAMES,
     STATE_BASE_RATES,
     WAREHOUSE_RATES,
+    STATE_TIME_ZONES,
     normalizeStateCode,
     findWarehouseRate,
     selectTaxRate,
+    selectTimeZone,
   };
 
   root.MacbidTaxes = Object.assign(root.MacbidTaxes || {}, api);
