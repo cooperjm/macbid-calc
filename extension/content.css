@@ -108,6 +108,23 @@
   }
 }
 
+.macbid-tp-ends {
+  align-items: center;
+  border-bottom: 1px solid rgba(124, 176, 45, 0.22);
+  color: #24122f;
+  display: flex;
+  font-size: 15px;
+  font-weight: 800;
+  gap: 7px;
+  margin: 0 0 10px;
+  padding: 0 0 10px;
+}
+
+.macbid-tp-ends svg {
+  color: #6f8f21;
+  flex: none;
+}
+
 .macbid-tp-kicker {
   color: #6f8f21;
   font-size: 12px;
@@ -341,6 +358,13 @@
   .macbid-tp-panel-rgb::after {
     background: linear-gradient(135deg, #1e1a2e 0%, #151f0f 100%);
   }
+
+  .macbid-tp-ends {
+    border-bottom-color: rgba(124, 176, 45, 0.3);
+    color: #f3f4f6;
+  }
+
+  .macbid-tp-ends svg { color: #a3c74f; }
 
   .macbid-tp-kicker { color: #a3c74f; }
 

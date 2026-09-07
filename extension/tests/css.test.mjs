@@ -51,3 +51,16 @@ test('reduced-motion users get the glow without the animation', () => {
   assert.match(reduced[1], /\.macbid-tp-panel-rgb::before\b/, 'the ring should be covered too');
   assert.match(reduced[1], /animation:\s*none/, 'the animations should be switched off');
 });
+
+test('the end-time header is separated from the total and themed for dark mode', () => {
+  const rule = contentCss.match(/\.macbid-tp-ends\s*\{([^}]*)\}/);
+
+  assert.ok(rule, '.macbid-tp-ends rule should exist');
+  assert.match(rule[1], /border-bottom:/, 'a divider separates it from the total');
+  assert.match(rule[1], /margin:/, 'it carries its own bottom spacing');
+
+  const dark = contentCss.match(/@media\s*\(prefers-color-scheme:\s*dark\)\s*\{([\s\S]*?)\n\}/);
+
+  assert.ok(dark, 'a dark-mode block should exist');
+  assert.match(dark[1], /\.macbid-tp-ends\b/, 'the header should be themed for dark mode');
+});
