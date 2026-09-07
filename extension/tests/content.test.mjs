@@ -35,3 +35,30 @@ test('detail price text separates text nodes so adjacent numbers do not merge', 
   assert.match(block[1], /createTreeWalker/);
   assert.doesNotMatch(block[1], /return getText\(clone\)/);
 });
+
+test('the end instant is cached so the panel signature cannot oscillate', () => {
+  const block = contentJs.match(/function getAuctionEndsAt\(\) \{([\s\S]*?)\n  \}/);
+
+  assert.ok(block, 'getAuctionEndsAt should be present');
+  assert.match(block[1], /cachedEndsAt/, 'it should read and write a cached value');
+  assert.match(block[1], /END_TIME_DRIFT_MS/, 'it should only refresh past the drift threshold');
+});
+
+test('the cached end instant is cleared when the lot changes', () => {
+  const block = contentJs.match(/const currentKey = getProductKey\(\);([\s\S]*?)\n    \}/);
+
+  assert.ok(block, 'the SPA navigation branch should be present');
+  assert.match(block[1], /cachedEndsAt = null/);
+});
+test('the panel signature tracks the rendered end-time label', () => {
+  // Scoped to renderPanel: renderListingBadges builds its own signature, and an
+  // unscoped match finds that one first.
+  const renderPanelBlock = contentJs.match(/function renderPanel\(overlayRoot, snapshot\) \{([\s\S]*?)\n  \}/);
+  const signatureBlock = renderPanelBlock
+    && renderPanelBlock[1].match(/const signature = JSON\.stringify\(\{([\s\S]*?)\n    \}\);/);
+
+  assert.ok(renderPanelBlock, 'renderPanel should be present');
+  assert.ok(signatureBlock, 'the renderPanel signature block should be present');
+  assert.match(signatureBlock[1], /ends:/);
+  assert.match(renderPanelBlock[1], /createEndsLine\(endsLabel\)/, 'the header line should be rendered');
+});

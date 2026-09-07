@@ -10,11 +10,13 @@
   // badge with no whitespace separator) still parses correctly on mac.bid.
   const DOLLAR_PATTERN = /\$\s*((?:[0-9]{1,3}(?:,[0-9]{3})+|[0-9]+)(?:\.[0-9]{1,2})?)(?![0-9,.])/g;
   const DEBOUNCE_MS = 150;
+  const END_TIME_DRIFT_MS = 5000;
   const BUDGETS_KEY = 'macbidBudgets';
 
   const fees = root.MacbidFees;
   const taxes = root.MacbidTaxes;
   const parser = root.MacbidParser;
+  const endtime = root.MacbidEndTime;
 
   if (!fees || !taxes || !parser) {
     return;
@@ -36,6 +38,7 @@
   let renderTimer = null;
   let productBudget = '';
   let productKey = null;
+  let cachedEndsAt = null;
 
   // Debug instrumentation. Enable from the page console with:
   //   localStorage.setItem('macbidDebug', '1')
@@ -162,6 +165,27 @@
     }
 
     return null;
+  }
+
+  // parseAuctionEndTime() recomputes Date.now() + remaining, and the countdown
+  // only ticks in whole seconds, so the raw value drifts about a second between
+  // renders. Feeding that into the panel signature would rebuild the panel
+  // several times a second. Hold the first value and accept a new one only once
+  // it moves past the drift band - wide enough to ignore the jitter, narrow
+  // enough to catch a soft-close extension.
+  function getAuctionEndsAt() {
+    const computed = parseAuctionEndTime();
+
+    if (computed === null) {
+      cachedEndsAt = null;
+      return null;
+    }
+
+    if (cachedEndsAt === null || Math.abs(computed - cachedEndsAt) > END_TIME_DRIFT_MS) {
+      cachedEndsAt = computed;
+    }
+
+    return cachedEndsAt;
   }
 
   function cleanupExpiredBudgets(callback) {
@@ -664,6 +688,35 @@
     return element;
   }
 
+  function createEndsLine(text) {
+    const line = createElement('p', 'macbid-tp-ends');
+    const namespace = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(namespace, 'svg');
+    const face = document.createElementNS(namespace, 'circle');
+    const hands = document.createElementNS(namespace, 'path');
+
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '15');
+    svg.setAttribute('height', '15');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('aria-hidden', 'true');
+
+    face.setAttribute('cx', '12');
+    face.setAttribute('cy', '12');
+    face.setAttribute('r', '9');
+
+    hands.setAttribute('d', 'M12 7v5l3 2');
+    hands.setAttribute('stroke-linecap', 'round');
+    hands.setAttribute('stroke-linejoin', 'round');
+
+    svg.append(face, hands);
+    line.append(svg, document.createTextNode(text));
+
+    return line;
+  }
+
   function createRow(label, value) {
     const row = createElement('div', 'macbid-tp-row');
     row.append(createElement('span', '', label), createElement('strong', '', value));
@@ -920,6 +973,14 @@
     const effectiveSettings = getEffectiveSettings(snapshot, taxSelection);
     const total = fees.calculateTotal(snapshot.currentBid, effectiveSettings);
     const quality = getDealQuality(total.total, snapshot.retailPrice);
+    const endsAt = getAuctionEndsAt();
+    const timeZone = taxes.selectTimeZone({
+      locationName: snapshot.locationName,
+      stateCode: snapshot.stateCode,
+    });
+    const endsLabel = endsAt !== null && timeZone
+      ? endtime.formatAuctionEnd(endsAt, timeZone, Date.now())
+      : null;
     const signature = JSON.stringify({
       total: total.total,
       bid: total.bid,
@@ -934,6 +995,7 @@
       taxLabel: taxSelection.label,
       rgb: settings.rgbGlowEnabled,
       quality,
+      ends: endsLabel,
     });
     const existingPanel = overlayRoot.firstElementChild;
 
@@ -962,6 +1024,10 @@
     const totalEl = createElement('p', 'macbid-tp-total', formatCurrency(total.total));
     if (quality) {
       totalEl.classList.add(`macbid-tp-total--${quality}`);
+    }
+
+    if (endsLabel) {
+      panel.append(createEndsLine(endsLabel));
     }
 
     panel.append(
@@ -1002,6 +1068,7 @@
     if (currentKey !== productKey) {
       productKey = currentKey;
       productBudget = '';
+      cachedEndsAt = null;
       loadProductBudget((budget) => {
         productBudget = budget;
         scheduleRender();
