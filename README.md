@@ -23,6 +23,8 @@ Fee structure per [mac.bid's terms of use](https://www.mac.bid/terms-of-use). Ta
 
 Adds an estimated-total panel to lot pages, showing the all-in price, what percentage of retail you're paying, a collapsible fee breakdown, and a budget field that works backwards to a max safe bid. Budgets are saved per lot and expire when the auction ends. Listing and search pages get compact `Est. $…` badges.
 
+The panel header shows the exact date and time the lot closes, in the pickup warehouse’s timezone, so you never have to add the countdown to the current time. Warehouse granularity matters: El Paso runs on Mountain time while every other MAC.BID warehouse is Eastern. When the timezone cannot be determined the line is simply omitted rather than guessed.
+
 Premium rate, lot fee, a custom tax rate and the RGB panel glow are configurable on the options page. Buyer's Assurance is not — it follows the checkbox on the lot page itself.
 
 Everything runs locally in your browser. The extension makes no network requests and collects nothing; the only permission it declares is `storage`, for your settings and per-lot budgets.
@@ -43,7 +45,7 @@ After editing any extension file, click **Reload** on the extension card, then r
 npm test
 ```
 
-Runs the shared fee, tax and parser suites on Node's built-in test runner. No dependencies, no build step.
+Runs the fee, tax, parser, end-time, content-script and CSS suites on Node's built-in test runner. No dependencies, no build step.
 
 ### Packaging for the Chrome Web Store
 
@@ -59,6 +61,7 @@ The listing also needs a privacy policy URL, which is what `privacy.html` is for
 
 - The unpacked extension loads without manifest errors.
 - A lot page shows an estimated total panel.
+- The panel header shows the lot’s end time, and it matches the countdown.
 - The total matches `(bid + bid × 0.15 + 3 + assurance) × (1 + taxRate)`.
 - Updating the budget field updates the max safe bid.
 - Changing options updates the lot page after a refresh or storage change.
